@@ -1,30 +1,11 @@
-body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
-.container { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
+.container { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
 .hidden { display: none !important; }
-input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-.btn-main { width: 100%; padding: 12px; background: #6c5ce7; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-.quiz-card { border: 1px solid #eee; padding: 15px; margin: 15px 0; border-radius: 8px; text-align: left; }
-.ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
-.btn-small { background: #eee; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-/* ... Todo lo anterior se mantiene ... */
-.ranking-item span { flex: 1; }
-#responses-table { max-height: 300px; overflow-y: auto; }
-.btn-small { padding: 8px 15px; background: #dfe6e9; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold; }
-
-/* ... Todo lo de la v1.0 se mantiene ... */
-
-button:disabled {
-    background: #b2bec3 !important;
-    color: #636e72 !important;
-    cursor: not-allowed !important;
-    border: none !important;
-}
-
-.ranking-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    background: #f8f9fa;
-    margin-bottom: 5px;
-    border-radius: 8px;
-}
+input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+.btn-main { width: 100%; padding: 14px; background: #6c5ce7; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 16px; }
+.btn-small { background: #eee; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+.quiz-card { border: 1px solid #eee; padding: 15px; margin: 15px 0; border-radius: 10px; text-align: left; background: #fff; border-left: 5px solid #6c5ce7; }
+.ranking-item { display: flex; justify-content: space-between; padding: 10px; background: #f9f9f9; margin-bottom: 5px; border-radius: 6px; font-size: 14px; }
+.header-user { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: bold; }
+/* Estilo específico para botón reset admin */
+.btn-reset-admin { background: #ff7675 !important; color: white; width: 100%; margin-top: 15px; font-size: 10px; text-transform: uppercase; }
