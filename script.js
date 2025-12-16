@@ -1,27 +1,25 @@
 import { 
-    collection, addDoc, onSnapshot, deleteDoc, doc, getDoc, setDoc, serverTimestamp 
+    collection, addDoc, onSnapshot, doc, getDoc, setDoc, serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- VARIABLES DE ESTADO ---
+// --- ESTADO DE LA APP ---
 let currentUser = localStorage.getItem('quizUser') || null;
 
-// --- NAVEGACIÓN ---
+// --- NAVEGACIÓN (Mantiene tu diseño CSS) ---
 function showScreen(id) {
     const screens = ['login-screen', 'home-screen', 'editor-screen', 'quiz-screen', 'settings-screen'];
     screens.forEach(s => {
         const el = document.getElementById(s);
-        if (el) el.classList.add('hidden');
+        if (el) el.classList.add('hidden'); // Usa tu clase .hidden de CSS
     });
     const target = document.getElementById(id);
     if (target) target.classList.remove('hidden');
 }
 
-// --- LÓGICA DE USUARIOS (LOGIN) ---
+// --- LOGICA DE USUARIOS ---
 async function handleLogin() {
-    const nameInput = document.getElementById('user-name-input');
-    const passInput = document.getElementById('user-pass-input');
-    const name = nameInput.value.trim();
-    const pass = passInput.value.trim();
+    const name = document.getElementById('user-name-input').value.trim();
+    const pass = document.getElementById('user-pass-input').value.trim();
 
     if (!name || !pass) return alert("Escribe usuario y contraseña");
 
@@ -39,9 +37,8 @@ async function handleLogin() {
             await setDoc(userRef, { originalName: name, pass: pass });
             loginSuccess(name);
         }
-    } catch (error) {
-        console.error("Error:", error);
-        alert("Error de conexión con la base de datos");
+    } catch (e) {
+        alert("Error de conexión");
     }
 }
 
@@ -62,7 +59,7 @@ function showHome() {
     }
 }
 
-// --- GUARDAR NUEVO QUIZ ---
+// --- CREAR Y GUARDAR QUIZ ---
 async function saveNewQuiz() {
     const title = document.getElementById('quiz-title-input').value.trim();
     const question = document.getElementById('q-text').value.trim();
@@ -71,7 +68,7 @@ async function saveNewQuiz() {
                          .filter(val => val !== "");
 
     if (!title || !question || options.length < 2) {
-        return alert("Rellena el título, la pregunta y al menos 2 opciones.");
+        return alert("Completa el título, la pregunta y al menos 2 opciones.");
     }
 
     try {
@@ -83,37 +80,36 @@ async function saveNewQuiz() {
             createdAt: serverTimestamp()
         });
         alert("¡Quiz publicado con éxito! 🚀");
-        // Limpiar campos
+        
+        // Limpiar formulario y volver
         document.getElementById('quiz-title-input').value = "";
         document.getElementById('q-text').value = "";
         showHome();
-    } catch (error) {
-        console.error("Error al guardar:", error);
-        alert("Error al publicar el quiz.");
+    } catch (e) {
+        alert("Error al publicar");
     }
 }
 
-// --- DATOS EN TIEMPO REAL (LISTADO Y RANKING) ---
+// --- CARGAR DATOS (QUIZZES Y RANKING) ---
 function listenData() {
-    // Escuchar Quizzes
+    // Lista de Quizzes
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
         if (!list) return;
         list.innerHTML = "";
         snap.forEach(d => {
-            const q = { id: d.id, ...d.data() };
+            const q = d.data();
             const div = document.createElement('div');
-            div.className = 'quiz-card';
+            div.className = 'quiz-card'; // Mantiene tu diseño de tarjeta
             div.innerHTML = `
                 <b>${q.title}</b><br><small>Por: ${q.author}</small><br>
-                <button class="btn-main" style="width:auto; margin-top:10px" id="play-${q.id}">Jugar</button>
+                <button class="btn-main" style="width:auto; margin-top:10px">Jugar</button>
             `;
             list.appendChild(div);
-            // Aquí iría la función para empezar a jugar
         });
     });
 
-    // Escuchar Ranking
+    // Ranking Global
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         if (!rList) return;
@@ -127,27 +123,26 @@ function listenData() {
     });
 }
 
-// --- ASIGNACIÓN DE EVENTOS (BOTONES) ---
+// --- ASIGNACIÓN DE EVENTOS ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Botón Login
+    // Botones de sesión
     const loginBtn = document.getElementById('btn-login-action');
     if (loginBtn) loginBtn.onclick = handleLogin;
 
-    // Botón Logout
     const logoutBtn = document.getElementById('btn-logout');
     if (logoutBtn) logoutBtn.onclick = () => {
         localStorage.removeItem('quizUser');
         location.reload();
     };
 
-    // Botones de Navegación
+    // Botones de pantalla
     const goEditor = document.getElementById('btn-go-editor');
     if (goEditor) goEditor.onclick = () => showScreen('editor-screen');
 
     const backHome = document.getElementById('btn-back-home');
     if (backHome) backHome.onclick = () => showHome();
 
-    // Botones del Editor
+    // Lógica del Editor
     const saveBtn = document.getElementById('btn-save-quiz');
     if (saveBtn) saveBtn.onclick = saveNewQuiz;
 
@@ -162,5 +157,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Iniciar aplicación
+// Arrancar
 showHome();
