@@ -10,20 +10,20 @@
 
     <div id="login-screen" class="container">
         <h1>🚀 Quizzes GEM</h1>
-        <input type="text" id="user-name-input" placeholder="Nombre de usuario">
+        <input type="text" id="user-name-input" placeholder="Usuario">
         <input type="password" id="user-pass-input" placeholder="Contraseña">
-        <button id="login-btn" class="btn-main">Entrar</button>
+        <button id="btn-login-action" class="btn-main">Entrar / Registrarse</button>
     </div>
 
     <div id="home-screen" class="container wide hidden">
         <div class="header-user">
             <span id="user-display"></span>
-            <button id="logout-btn" class="btn-small">Cerrar Sesión</button>
+            <button id="btn-logout" class="btn-small">Salir</button>
         </div>
         <div class="main-content">
             <div class="quiz-section">
-                <h1>🎮 Menú</h1>
-                <button onclick="document.dispatchEvent(new CustomEvent('showEditor'))" class="btn-create">➕ Crear Nuevo Quiz</button>
+                <h1>🎮 Menú Quizzes</h1>
+                <button id="btn-go-editor" class="btn-create">➕ Crear Nuevo Quiz</button>
                 <div id="quiz-list"></div>
             </div>
             <div class="ranking-section">
@@ -34,16 +34,17 @@
     </div>
 
     <div id="editor-screen" class="container hidden">
-        <button onclick="document.dispatchEvent(new CustomEvent('showHome'))" class="btn-back">← Volver</button>
+        <button id="btn-back-home" class="btn-back">← Volver</button>
         <h2>📝 Nuevo Quiz</h2>
-        <input type="text" id="quiz-title-input" placeholder="Título">
-        <input type="text" id="q-text" placeholder="Pregunta">
+        <input type="text" id="quiz-title-input" placeholder="Título del Quiz">
+        <input type="text" id="q-text" placeholder="Escribe la pregunta">
         <div id="options-setup" class="options-box">
-            <input type="text" class="opt-input" placeholder="Correcta ✅">
-            <input type="text" class="opt-input" placeholder="Incorrecta ❌">
+            <p><small>La primera es la CORRECTA ✅</small></p>
+            <input type="text" class="opt-input" placeholder="Respuesta Correcta">
+            <input type="text" class="opt-input" placeholder="Respuesta Incorrecta">
         </div>
-        <button id="add-opt-btn" class="btn-secondary">+ Opción</button>
-        <button id="save-quiz-btn" class="btn-main" style="margin-top:20px">Publicar</button>
+        <button id="btn-add-option" class="btn-secondary">+ Opción</button>
+        <button id="btn-save-quiz" class="btn-main" style="margin-top:20px">Publicar Quiz</button>
     </div>
 
     <div id="quiz-screen" class="container hidden">
@@ -52,17 +53,16 @@
     </div>
 
     <div id="settings-screen" class="container hidden">
-        <button onclick="document.dispatchEvent(new CustomEvent('showHome'))" class="btn-back">← Volver</button>
-        <h2>⚙️ Ajustes</h2>
+        <button id="btn-back-home-set" class="btn-back">← Volver</button>
+        <h2>⚙️ Ajustes del Quiz</h2>
         <div id="quiz-info-box" class="options-box"></div>
-        <button id="delete-quiz-btn" class="btn-main" style="background:#ff7675">❌ Eliminar Quiz</button>
+        <button id="btn-delete-quiz" class="btn-main" style="background:#ff7675">❌ Eliminar Quiz</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Valores obtenidos de tus capturas de pantalla
         const firebaseConfig = {
             apiKey: "AiZaSyAeDDT7easViii62TAbClEavEkeEy-aFL0",
             authDomain: "quizzesgem.firebaseapp.com",
