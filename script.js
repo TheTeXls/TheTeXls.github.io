@@ -1,15 +1,14 @@
-import { collection, addDoc, onSnapshot, doc, getDoc, setDoc, serverTimestamp, query, orderBy } 
+import { collection, addDoc, onSnapshot, doc, getDoc, setDoc, serverTimestamp } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let currentUser = localStorage.getItem('quizUser') || null;
 
 function showScreen(id) {
     document.querySelectorAll('.container').forEach(s => s.classList.add('hidden'));
-    const target = document.getElementById(id);
-    if(target) target.classList.remove('hidden');
+    document.getElementById(id).classList.remove('hidden');
 }
 
-// --- LOGICA DE LOGIN ---
+// LOGIN
 async function handleLogin() {
     const name = document.getElementById('user-name-input').value.trim();
     const pass = document.getElementById('user-pass-input').value.trim();
@@ -33,64 +32,80 @@ function showHome() {
     listenData();
 }
 
-// --- ESCUCHAR DATOS (QUIZZES Y RANKING) ---
+// ESCUCHAR DATOS (QUIZZES Y RANKING)
 function listenData() {
-    // 1. Cargar Quizzes con Botón de Jugar
+    // Quizzes
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
-        list.innerHTML = "<h3>Quizzes Disponibles</h3>";
+        list.innerHTML = "<h3>Quizzes</h3>";
         snap.forEach(d => {
-            const q = d.data();
-            const quizDiv = document.createElement('div');
-            quizDiv.className = 'quiz-card';
-            quizDiv.innerHTML = `
-                <b>${q.title}</b><br>
-                <small>Creado por: ${q.author}</small><br>
-                <button class="btn-main" style="margin-top:10px; padding:5px; font-size:14px" onclick="alert('Iniciando juego...')">Jugar ahora 🎮</button>
-            `;
-            list.appendChild(quizDiv);
+            const q = { id: d.id, ...d.data() };
+            const div = document.createElement('div');
+            div.className = 'quiz-card';
+            div.innerHTML = `<b>${q.title}</b><br><small>Por: ${q.author}</small><br>`;
+            const btn = document.createElement('button');
+            btn.className = "btn-main";
+            btn.innerText = "Jugar 🎮";
+            btn.onclick = () => startQuiz(q);
+            div.appendChild(btn);
+            list.appendChild(div);
         });
     });
 
-    // 2. Cargar Ranking Global
+    // Ranking
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         rList.innerHTML = "<h3>🏆 Ranking Global</h3>";
-        let scores = {};
+        let totals = {};
         snap.forEach(d => {
             const s = d.data();
-            scores[s.user] = (scores[s.user] || 0) + (s.points || 0);
+            totals[s.user] = (totals[s.user] || 0) + (s.points || 0);
         });
-        
-        const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-        sorted.forEach(([user, pts]) => {
-            const item = document.createElement('div');
-            item.className = 'ranking-item';
-            item.innerHTML = `<span>${user}</span> <b>${pts} pts</b>`;
-            rList.appendChild(item);
+        Object.entries(totals).sort((a,b) => b[1]-a[1]).forEach(([u, p]) => {
+            rList.innerHTML += `<div class="ranking-item"><span>${u}</span><b>${p} pts</b></div>`;
         });
     });
 }
 
-// --- PUBLICAR QUIZ ---
+// JUGAR QUIZ
+function startQuiz(quiz) {
+    showScreen('quiz-screen');
+    const cont = document.getElementById('options-container');
+    document.getElementById('current-quiz-title').innerText = quiz.title;
+    cont.innerHTML = `<p>${quiz.q}</p>`;
+
+    quiz.opts.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = "option-btn";
+        btn.innerText = opt;
+        btn.onclick = async () => {
+            const pts = (i === 0) ? 1 : 0;
+            await addDoc(collection(window.db, "scores"), {
+                user: currentUser, points: pts, quizId: quiz.id
+            });
+            alert(pts === 1 ? "✅ ¡Correcto!" : "❌ Incorrecto");
+            showHome();
+        };
+        cont.appendChild(btn);
+    });
+}
+
+// PUBLICAR
 async function saveNewQuiz() {
     const title = document.getElementById('quiz-title-input').value.trim();
     const question = document.getElementById('q-text').value.trim();
-    const inputs = document.querySelectorAll('.opt-input');
-    const options = Array.from(inputs).map(i => i.value.trim()).filter(v => v !== "");
+    const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim()).filter(v => v !== "");
 
-    if (!title || !question || options.length < 2) return alert("Completa todos los campos");
+    if (!title || !question || opts.length < 2) return alert("Faltan datos");
 
-    try {
-        await addDoc(collection(window.db, "quizzes"), {
-            title, q: question, opts: options, author: currentUser, createdAt: serverTimestamp()
-        });
-        alert("¡Publicado!");
-        showHome();
-    } catch (e) { alert("Error al publicar"); }
+    await addDoc(collection(window.db, "quizzes"), {
+        title, q: question, opts, author: currentUser
+    });
+    alert("¡Publicado!");
+    showHome();
 }
 
-// --- ASIGNAR EVENTOS ---
+// EVENTOS
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login-action').onclick = handleLogin;
     document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
@@ -99,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-save-quiz').onclick = saveNewQuiz;
     document.getElementById('btn-add-option').onclick = () => {
         const inp = document.createElement('input');
-        inp.className = "opt-input"; inp.placeholder = "Incorrecta";
+        inp.className = "opt-input"; inp.placeholder = "Respuesta Incorrecta";
         document.getElementById('options-setup').appendChild(inp);
     };
 });
