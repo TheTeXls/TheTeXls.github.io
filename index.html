@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quizzes GEM</title> 
+    <title>Quizzes GEM v1.5</title> 
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="login-screen" class="container">
-        <h1>🚀 Quizzes GEM</h1>
+        <h1>🚀 Quizzes GEM v1.5</h1>
         <input type="text" id="user-name-input" placeholder="Usuario">
         <input type="password" id="user-pass-input" placeholder="Contraseña">
         <button id="btn-login-action" class="btn-main">Entrar</button>
@@ -41,6 +41,19 @@
     <div id="quiz-screen" class="container hidden">
         <h2 id="current-quiz-title"></h2>
         <div id="options-container"></div>
+    </div>
+
+    <div id="settings-screen" class="container hidden">
+        <button onclick="showScreen('home-screen')" class="btn-small">← Volver</button>
+        <h2 id="settings-quiz-title">Ajustes del Quiz</h2>
+        <button id="btn-view-responses" class="btn-main" style="background:#0984e3">📊 Ver Respuestas</button>
+        <button id="btn-delete-quiz" class="btn-main" style="background:#d63031">🗑️ Eliminar Quiz</button>
+    </div>
+
+    <div id="responses-screen" class="container hidden">
+        <button onclick="showScreen('settings-screen')" class="btn-small">← Volver</button>
+        <h2>📈 Respuestas Recibidas</h2>
+        <div id="responses-table" style="margin-top:20px; text-align:left;"></div>
     </div>
 
     <script type="module">

@@ -1,7 +1,8 @@
-import { collection, addDoc, onSnapshot, doc, getDoc, setDoc, serverTimestamp } 
+import { collection, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, serverTimestamp, query, where, getDocs } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let currentUser = localStorage.getItem('quizUser') || null;
+let activeQuizId = null;
 
 function showScreen(id) {
     document.querySelectorAll('.container').forEach(s => s.classList.add('hidden'));
@@ -30,7 +31,7 @@ function showHome() {
 }
 
 function initRealtime() {
-    // Lista de Quizzes con Botón de Jugar
+    // Quizzes con botón de Ajustes para el autor
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
         list.innerHTML = "<h3>Quizzes</h3>";
@@ -39,16 +40,26 @@ function initRealtime() {
             const div = document.createElement('div');
             div.className = 'quiz-card';
             div.innerHTML = `<b>${q.title}</b><br><small>Por: ${q.author}</small>`;
-            const btn = document.createElement('button');
-            btn.className = "btn-main";
-            btn.innerText = "Jugar 🎮";
-            btn.onclick = () => startQuiz(q);
-            div.appendChild(btn);
+            
+            const btnJugar = document.createElement('button');
+            btnJugar.className = "btn-main"; btnJugar.innerText = "Jugar 🎮";
+            btnJugar.onclick = () => startQuiz(q);
+            div.appendChild(btnJugar);
+
+            // Si eres el autor, mostrar botón de Ajustes
+            if (q.author === currentUser) {
+                const btnAjustes = document.createElement('button');
+                btnAjustes.className = "btn-small"; 
+                btnAjustes.innerText = "⚙️ Ajustes";
+                btnAjustes.style.marginTop = "10px";
+                btnAjustes.onclick = () => openSettings(q);
+                div.appendChild(btnAjustes);
+            }
             list.appendChild(div);
         });
     });
 
-    // Ranking Real
+    // Ranking Global
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         rList.innerHTML = "<h3>🏆 Ranking Global</h3>";
@@ -63,26 +74,87 @@ function initRealtime() {
     });
 }
 
-function startQuiz(quiz) {
+// LOGICA DE JUEGO (v1.5: Solo suma puntos la primera vez)
+async function startQuiz(quiz) {
     showScreen('quiz-screen');
     document.getElementById('current-quiz-title').innerText = quiz.title;
     const cont = document.getElementById('options-container');
     cont.innerHTML = `<p>${quiz.q}</p>`;
+
+    // Revisar si el usuario ya jugó este quiz
+    const q = query(collection(window.db, "scores"), where("user", "==", currentUser), where("quizId", "==", quiz.id));
+    const querySnapshot = await getDocs(q);
+    const yaJugo = !querySnapshot.empty;
+
     quiz.opts.forEach((opt, i) => {
         const btn = document.createElement('button');
         btn.className = "btn-main";
         btn.style.background = "white"; btn.style.color = "#6c5ce7";
         btn.innerText = opt;
         btn.onclick = async () => {
-            const pts = (i === 0) ? 1 : 0;
+            const acerto = (i === 0);
+            const puntosASumar = (acerto && !yaJugo) ? 1 : 0;
+
             await addDoc(collection(window.db, "scores"), {
-                user: currentUser, points: pts, date: serverTimestamp()
+                user: currentUser,
+                points: puntosASumar,
+                quizId: quiz.id,
+                acerto: acerto,
+                date: serverTimestamp()
             });
-            alert(pts ? "✅ ¡Bien!" : "❌ Mal");
+
+            if (yaJugo) {
+                alert(acerto ? "✅ Correcto (Ya habías jugado, no suma al ranking)" : "❌ Incorrecto");
+            } else {
+                alert(acerto ? "✅ ¡Correcto! +1 punto al ranking" : "❌ Incorrecto");
+            }
             showHome();
         };
         cont.appendChild(btn);
     });
+}
+
+// AJUSTES DEL QUIZ
+function openSettings(quiz) {
+    activeQuizId = quiz.id;
+    document.getElementById('settings-quiz-title').innerText = `Ajustes: ${quiz.title}`;
+    showScreen('settings-screen');
+
+    document.getElementById('btn-delete-quiz').onclick = async () => {
+        if(confirm("¿Seguro que quieres borrar este quiz?")) {
+            await deleteDoc(doc(window.db, "quizzes", quiz.id));
+            alert("Quiz eliminado");
+            showHome();
+        }
+    };
+
+    document.getElementById('btn-view-responses').onclick = async () => {
+        showScreen('responses-screen');
+        const table = document.getElementById('responses-table');
+        table.innerHTML = "Cargando...";
+        
+        const q = query(collection(window.db, "scores"), where("quizId", "==", quiz.id));
+        const snap = await getDocs(q);
+        
+        table.innerHTML = "";
+        if(snap.empty) table.innerHTML = "Nadie ha respondido aún.";
+        snap.forEach(d => {
+            const r = d.data();
+            table.innerHTML += `<div class="ranking-item">
+                <span>${r.user}</span>
+                <span>${r.acerto ? "✅ Acertó" : "❌ Falló"}</span>
+            </div>`;
+        });
+    };
+}
+
+// EL RESTO IGUAL (Guardar Quiz, Add Option, DOMContentLoaded)
+async function saveNewQuiz() {
+    const title = document.getElementById('quiz-title-input').value;
+    const q = document.getElementById('q-text').value;
+    const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value);
+    await addDoc(collection(window.db, "quizzes"), { title, q, opts, author: currentUser });
+    alert("¡Publicado!"); showHome();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -90,13 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
     document.getElementById('btn-go-editor').onclick = () => showScreen('editor-screen');
     document.getElementById('btn-back-home').onclick = () => showHome();
-    document.getElementById('btn-save-quiz').onclick = async () => {
-        const title = document.getElementById('quiz-title-input').value;
-        const q = document.getElementById('q-text').value;
-        const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value);
-        await addDoc(collection(window.db, "quizzes"), { title, q, opts, author: currentUser });
-        alert("¡Publicado!"); showHome();
-    };
+    document.getElementById('btn-save-quiz').onclick = saveNewQuiz;
     document.getElementById('btn-add-option').onclick = () => {
         const inp = document.createElement('input');
         inp.className = "opt-input"; inp.placeholder = "Incorrecta";

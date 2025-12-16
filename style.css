@@ -6,3 +6,7 @@ input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; bord
 .quiz-card { border: 1px solid #eee; padding: 15px; margin: 15px 0; border-radius: 8px; text-align: left; }
 .ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
 .btn-small { background: #eee; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+/* ... Todo lo anterior se mantiene ... */
+.ranking-item span { flex: 1; }
+#responses-table { max-height: 300px; overflow-y: auto; }
+.btn-small { padding: 8px 15px; background: #dfe6e9; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold; }
