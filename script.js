@@ -2,7 +2,7 @@ import {
     collection, addDoc, onSnapshot, deleteDoc, doc, getDoc, setDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- VARIABLES ---
+// Variables de estado
 let currentUser = localStorage.getItem('quizUser') || null;
 
 // --- NAVEGACIÓN ---
@@ -16,12 +16,12 @@ function showScreen(id) {
     if (target) target.classList.remove('hidden');
 }
 
-// --- LOGIN Y REGISTRO ---
+// --- LOGICA DE LOGIN ---
 async function handleLogin() {
     const name = document.getElementById('user-name-input').value.trim();
     const pass = document.getElementById('user-pass-input').value.trim();
 
-    if (!name || !pass) return alert("Escribe usuario y contraseña");
+    if (!name || !pass) return alert("Por favor, rellena todos los campos.");
 
     try {
         const userRef = doc(window.db, "users", name.toLowerCase());
@@ -31,15 +31,16 @@ async function handleLogin() {
             if (snap.data().pass === pass) {
                 loginSuccess(name);
             } else {
-                alert("Contraseña incorrecta");
+                alert("Contraseña incorrecta.");
             }
         } else {
+            // Registro automático si el usuario no existe
             await setDoc(userRef, { originalName: name, pass: pass });
             loginSuccess(name);
         }
-    } catch (e) {
-        console.error("Error:", e);
-        alert("Error de conexión");
+    } catch (error) {
+        console.error("Error en Firebase:", error);
+        alert("Error de conexión. Revisa tu consola.");
     }
 }
 
@@ -59,9 +60,9 @@ function showHome() {
     }
 }
 
-// --- DATOS EN TIEMPO REAL ---
+// --- ESCUCHAR DATOS EN TIEMPO REAL ---
 function listenData() {
-    // Escuchar Quizzes
+    // Quizzes
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
         if (!list) return;
@@ -71,15 +72,15 @@ function listenData() {
             const div = document.createElement('div');
             div.className = 'quiz-card';
             div.innerHTML = `
-                <b>${q.title}</b><br><small>Por: ${q.author}</small><br>
+                <b>${q.title}</b><br><small>Autor: ${q.author}</small><br>
                 <button class="btn-main" style="width:auto; margin-top:10px" id="play-${q.id}">Jugar</button>
             `;
             list.appendChild(div);
-            document.getElementById(`play-${q.id}`).onclick = () => startQuiz(q);
+            document.getElementById(`play-${q.id}`).onclick = () => alert("¡Pronto podrás jugar este quiz!");
         });
     });
 
-    // Escuchar Ranking
+    // Ranking
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         if (!rList) return;
@@ -93,30 +94,7 @@ function listenData() {
     });
 }
 
-// --- JUEGO ---
-function startQuiz(quiz) {
-    showScreen('quiz-screen');
-    document.getElementById('current-quiz-title').innerText = quiz.title;
-    const container = document.getElementById('options-container');
-    container.innerHTML = `<h3>${quiz.q}</h3>`;
-    
-    quiz.opts.forEach((text, index) => {
-        const btn = document.createElement('button');
-        btn.innerText = text;
-        btn.className = 'option-btn';
-        btn.onclick = async () => {
-            const isCorrect = (index === 0);
-            await addDoc(collection(window.db, "scores"), {
-                user: currentUser, points: isCorrect ? 1 : 0, quizId: quiz.id
-            });
-            alert(isCorrect ? "✅ ¡Correcto!" : "❌ Incorrecto");
-            showHome();
-        };
-        container.appendChild(btn);
-    });
-}
-
-// --- EVENTOS DE BOTONES ---
+// --- ASIGNAR EVENTOS (Porque los módulos no permiten onclick en HTML) ---
 document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('btn-login-action');
     if (loginBtn) loginBtn.onclick = handleLogin;
@@ -127,12 +105,12 @@ document.addEventListener('DOMContentLoaded', () => {
         location.reload();
     };
 
-    const goEditor = document.getElementById('btn-go-editor');
-    if (goEditor) goEditor.onclick = () => showScreen('editor-screen');
+    const goEditorBtn = document.getElementById('btn-go-editor');
+    if (goEditorBtn) goEditorBtn.onclick = () => showScreen('editor-screen');
 
-    const backHome = document.getElementById('btn-back-home');
-    if (backHome) backHome.onclick = () => showHome();
+    const backHomeBtn = document.getElementById('btn-back-home');
+    if (backHomeBtn) backHomeBtn.onclick = () => showHome();
 });
 
-// Iniciar
+// Arrancar aplicación
 showHome();
