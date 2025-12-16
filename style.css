@@ -10,3 +10,21 @@ input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; bord
 .ranking-item span { flex: 1; }
 #responses-table { max-height: 300px; overflow-y: auto; }
 .btn-small { padding: 8px 15px; background: #dfe6e9; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold; }
+
+/* ... Todo lo de la v1.0 se mantiene ... */
+
+button:disabled {
+    background: #b2bec3 !important;
+    color: #636e72 !important;
+    cursor: not-allowed !important;
+    border: none !important;
+}
+
+.ranking-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: #f8f9fa;
+    margin-bottom: 5px;
+    border-radius: 8px;
+}
