@@ -14,31 +14,36 @@
         <button id="btn-login-action" class="btn-main">Entrar</button>
     </div>
 
-    <div id="home-screen" class="container wide hidden">
+    <div id="home-screen" class="container hidden">
         <div class="header-user">
             <span id="user-display"></span>
             <button id="btn-logout" class="btn-small">Salir</button>
         </div>
         <h1>🎮 Menú</h1>
-        <button id="btn-go-editor" class="btn-create">➕ Crear Nuevo Quiz</button>
+        <button id="btn-go-editor" class="btn-main" style="background:#00b894">➕ Crear Nuevo Quiz</button>
+        
         <div id="quiz-list"></div>
         <div id="global-ranking-list"></div>
     </div>
 
     <div id="editor-screen" class="container hidden">
-        <button id="btn-back-home" class="btn-back">← Volver</button>
+        <button id="btn-back-home" class="btn-small">← Volver</button>
         <h2>📝 Nuevo Quiz</h2>
         <input type="text" id="quiz-title-input" placeholder="Título del Quiz">
         <input type="text" id="q-text" placeholder="Escribe la pregunta">
-        
         <div id="options-setup">
             <p><small>La primera es la CORRECTA ✅</small></p>
             <input type="text" class="opt-input" placeholder="Respuesta Correcta">
             <input type="text" class="opt-input" placeholder="Respuesta Incorrecta">
         </div>
-        
-        <button id="btn-add-option" class="btn-secondary">+ Opción</button>
-        <button id="btn-save-quiz" class="btn-main" style="margin-top:20px; background:#00b894">Publicar Quiz</button>
+        <button id="btn-add-option" class="btn-small">+ Opción</button>
+        <button id="btn-save-quiz" class="btn-main">Publicar Quiz</button>
+    </div>
+
+    <div id="quiz-screen" class="container hidden">
+        <h2 id="current-quiz-title"></h2>
+        <div id="options-container"></div>
+        <button onclick="location.reload()" class="btn-small" style="margin-top:20px">Cancelar</button>
     </div>
 
     <script type="module">
@@ -58,11 +63,3 @@
     <script type="module" src="script.js"></script>
 </body>
 </html>
-
-<div id="quiz-list"></div>
-<div id="global-ranking-list" class="ranking-section"></div>
-
-<div id="quiz-screen" class="container hidden">
-    <h2 id="current-quiz-title"></h2>
-    <div id="options-container"></div>
-</div>
