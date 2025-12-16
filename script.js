@@ -1,5 +1,8 @@
-import { collection, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, serverTimestamp, query, where, getDocs } 
+import { collection, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, serverTimestamp, query, where, getDocs, writeBatch } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// --- CONFIGURACIÓN ADMIN ---
+const ADMIN_USER = "corban"; // Cambia esto al nombre de tu usuario principal en minúsculas
 
 let currentUser = localStorage.getItem('quizUser') || null;
 let displayName = localStorage.getItem('quizDisplayName') || null;
@@ -12,45 +15,40 @@ function showScreen(id) {
 window.showHome = function() {
     if (!currentUser) return showScreen('login-screen');
     showScreen('home-screen');
-    // Usamos displayName para que se vea bonito (Corban), pero currentUser es minúsculas (corban)
     document.getElementById('user-display').innerText = `👤 ${displayName || currentUser}`;
+    
+    // Mostrar botón de restaurar ranking solo si es admin
+    const adminBtn = document.getElementById('btn-admin-reset');
+    if (currentUser === ADMIN_USER) adminBtn.classList.remove('hidden');
+    else adminBtn.classList.add('hidden');
+
     initRealtime();
 }
 
-// LOGIN CORREGIDO (Bug de Mayúsculas/Minúsculas)
 async function handleLogin() {
     const rawName = document.getElementById('user-name-input').value.trim();
     const pass = document.getElementById('user-pass-input').value.trim();
-    
     if (!rawName || !pass) return alert("Completa los datos");
 
-    // Convertimos el ID a minúsculas siempre
     const lowerName = rawName.toLowerCase();
     const userRef = doc(window.db, "users", lowerName);
     const snap = await getDoc(userRef);
 
     if (snap.exists()) {
         if (snap.data().pass !== pass) return alert("Contraseña incorrecta");
-        // Si existe, recuperamos su nombre con mayúsculas original
         displayName = snap.data().originalName || rawName;
     } else {
-        // Si es nuevo, guardamos el ID en minúsculas y el nombre original para mostrar
-        await setDoc(userRef, { 
-            originalName: rawName, 
-            pass: pass,
-            createdAt: serverTimestamp() 
-        });
+        await setDoc(userRef, { originalName: rawName, pass: pass, createdAt: serverTimestamp() });
         displayName = rawName;
     }
 
-    currentUser = lowerName; // El ID siempre será minúsculas
+    currentUser = lowerName;
     localStorage.setItem('quizUser', currentUser);
     localStorage.setItem('quizDisplayName', displayName);
     window.showHome();
 }
 
 async function initRealtime() {
-    // Buscamos scores usando el ID en minúsculas
     const qScores = query(collection(window.db, "scores"), where("user", "==", currentUser));
     const scoreSnap = await getDocs(qScores);
     const playedQuizIds = scoreSnap.docs.map(d => d.data().quizId);
@@ -61,6 +59,7 @@ async function initRealtime() {
         snap.forEach(d => {
             const q = { id: d.id, ...d.data() };
             const isPlayed = playedQuizIds.includes(q.id);
+            const isAdmin = (currentUser === ADMIN_USER);
             
             const div = document.createElement('div');
             div.className = 'quiz-card';
@@ -71,20 +70,19 @@ async function initRealtime() {
             
             if (isPlayed) {
                 btnJugar.innerText = "Ya jugaste este quiz";
-                btnJugar.classList.add('btn-disabled'); // Añadimos clase para CSS
                 btnJugar.disabled = true;
+                btnJugar.style.background = "#b2bec3";
             } else {
                 btnJugar.innerText = "Jugar 🎮";
                 btnJugar.onclick = () => startQuiz(q);
             }
-            
             div.appendChild(btnJugar);
 
-            // Verificación de autor también en minúsculas
-            if (q.author.toLowerCase() === currentUser) {
+            // CONTROL DE QUIZZES (Para autor O para Admin)
+            if (q.author.toLowerCase() === currentUser || isAdmin) {
                 const btnAjustes = document.createElement('button');
                 btnAjustes.className = "btn-small";
-                btnAjustes.innerText = "⚙️ Ajustes";
+                btnAjustes.innerText = isAdmin && q.author.toLowerCase() !== currentUser ? "⚙️ Ajustes (Admin)" : "⚙️ Ajustes";
                 btnAjustes.style.marginTop = "10px";
                 btnAjustes.onclick = () => openSettings(q);
                 div.appendChild(btnAjustes);
@@ -97,7 +95,6 @@ async function initRealtime() {
         const rList = document.getElementById('global-ranking-list');
         rList.innerHTML = "<h3>🏆 Ranking Global</h3>";
         let totals = {};
-        // Para el ranking, acumulamos por el ID en minúsculas para que no se dupliquen
         snap.forEach(d => {
             const s = d.data();
             const userKey = s.user.toLowerCase();
@@ -107,6 +104,24 @@ async function initRealtime() {
             rList.innerHTML += `<div class="ranking-item"><span>${u}</span><b>${p} pts</b></div>`;
         });
     });
+}
+
+// RESTAURAR RANKING (Función Admin)
+async function resetRanking() {
+    if (!confirm("⚠️ ¿ESTÁS SEGURO? Esto borrará TODOS los puntos y permitirá que todos vuelvan a jugar los quizzes.")) return;
+    
+    try {
+        const scoresSnap = await getDocs(collection(window.db, "scores"));
+        const batch = writeBatch(window.db);
+        scoresSnap.forEach((d) => {
+            batch.delete(d.ref);
+        });
+        await batch.commit();
+        alert("Ranking restaurado y historial de juegos limpio.");
+        location.reload();
+    } catch (e) {
+        alert("Error al restaurar");
+    }
 }
 
 function startQuiz(quiz) {
@@ -122,7 +137,7 @@ function startQuiz(quiz) {
         btn.onclick = async () => {
             const acerto = (i === 0);
             await addDoc(collection(window.db, "scores"), {
-                user: currentUser, // Guardamos siempre en minúsculas
+                user: currentUser, 
                 points: acerto ? 1 : 0, 
                 quizId: quiz.id,
                 acerto: acerto,
@@ -140,7 +155,7 @@ function openSettings(quiz) {
     showScreen('settings-screen');
 
     document.getElementById('btn-delete-quiz').onclick = async () => {
-        if(confirm("¿Eliminar este quiz?")) {
+        if(confirm("¿Eliminar este quiz definitivamente?")) {
             await deleteDoc(doc(window.db, "quizzes", quiz.id));
             window.showHome();
         }
@@ -165,11 +180,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
     document.getElementById('btn-go-editor').onclick = () => showScreen('editor-screen');
     document.getElementById('btn-back-home').onclick = () => window.showHome();
+    document.getElementById('btn-admin-reset').onclick = resetRanking;
     document.getElementById('btn-save-quiz').onclick = async () => {
         const title = document.getElementById('quiz-title-input').value;
         const qText = document.getElementById('q-text').value;
         const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value);
-        // El autor se guarda como el displayName para que se vea bonito en la tarjeta
         await addDoc(collection(window.db, "quizzes"), { title, q: qText, opts, author: displayName });
         window.showHome();
     };
