@@ -1,9 +1,8 @@
-body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
-.container { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); box-sizing: border-box; }
+body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+.container { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .hidden { display: none !important; }
 input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
 .btn-main { width: 100%; padding: 12px; background: #6c5ce7; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-.btn-small { background: none; border: 1px solid #ccc; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-size: 12px; }
-.quiz-card { border: 1px solid #eee; padding: 15px; margin: 15px 0; border-radius: 8px; text-align: left; border-left: 4px solid #6c5ce7; }
-.ranking-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #f0f0f0; background: #fdfdfd; }
-.header-user { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.quiz-card { border: 1px solid #eee; padding: 15px; margin: 15px 0; border-radius: 8px; text-align: left; }
+.ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+.btn-small { background: #eee; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
