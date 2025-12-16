@@ -1,8 +1,9 @@
 import { collection, addDoc, onSnapshot, doc, getDoc, setDoc, deleteDoc, serverTimestamp, query, where, getDocs, writeBatch } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- CONFIGURACIÓN ADMIN ---
-const ADMIN_USER = "corban"; // Cambia esto al nombre de tu usuario principal en minúsculas
+// --- CREDENCIALES MAESTRAS ---
+const ADMIN_ID = "admin";
+const ADMIN_PASS = "gem";
 
 let currentUser = localStorage.getItem('quizUser') || null;
 let displayName = localStorage.getItem('quizDisplayName') || null;
@@ -17,9 +18,9 @@ window.showHome = function() {
     showScreen('home-screen');
     document.getElementById('user-display').innerText = `👤 ${displayName || currentUser}`;
     
-    // Mostrar botón de restaurar ranking solo si es admin
+    // Solo el usuario "admin" ve el botón de restaurar ranking
     const adminBtn = document.getElementById('btn-admin-reset');
-    if (currentUser === ADMIN_USER) adminBtn.classList.remove('hidden');
+    if (currentUser === ADMIN_ID) adminBtn.classList.remove('hidden');
     else adminBtn.classList.add('hidden');
 
     initRealtime();
@@ -31,27 +32,39 @@ async function handleLogin() {
     if (!rawName || !pass) return alert("Completa los datos");
 
     const lowerName = rawName.toLowerCase();
-    const userRef = doc(window.db, "users", lowerName);
-    const snap = await getDoc(userRef);
 
-    if (snap.exists()) {
-        if (snap.data().pass !== pass) return alert("Contraseña incorrecta");
-        displayName = snap.data().originalName || rawName;
+    // Lógica especial para el usuario Maestro
+    if (lowerName === ADMIN_ID && pass === ADMIN_PASS) {
+        currentUser = ADMIN_ID;
+        displayName = "Administrador Supremo";
     } else {
-        await setDoc(userRef, { originalName: rawName, pass: pass, createdAt: serverTimestamp() });
-        displayName = rawName;
+        // Lógica para usuarios normales
+        const userRef = doc(window.db, "users", lowerName);
+        const snap = await getDoc(userRef);
+
+        if (snap.exists()) {
+            if (snap.data().pass !== pass) return alert("Contraseña incorrecta");
+            displayName = snap.data().originalName || rawName;
+        } else {
+            await setDoc(userRef, { originalName: rawName, pass: pass, createdAt: serverTimestamp() });
+            displayName = rawName;
+        }
+        currentUser = lowerName;
     }
 
-    currentUser = lowerName;
     localStorage.setItem('quizUser', currentUser);
     localStorage.setItem('quizDisplayName', displayName);
     window.showHome();
 }
 
 async function initRealtime() {
-    const qScores = query(collection(window.db, "scores"), where("user", "==", currentUser));
-    const scoreSnap = await getDocs(qScores);
-    const playedQuizIds = scoreSnap.docs.map(d => d.data().quizId);
+    // Si es admin, no bloqueamos quizzes por haber jugado (así puede testearlos siempre)
+    let playedQuizIds = [];
+    if (currentUser !== ADMIN_ID) {
+        const qScores = query(collection(window.db, "scores"), where("user", "==", currentUser));
+        const scoreSnap = await getDocs(qScores);
+        playedQuizIds = scoreSnap.docs.map(d => d.data().quizId);
+    }
 
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
@@ -59,7 +72,7 @@ async function initRealtime() {
         snap.forEach(d => {
             const q = { id: d.id, ...d.data() };
             const isPlayed = playedQuizIds.includes(q.id);
-            const isAdmin = (currentUser === ADMIN_USER);
+            const isAdmin = (currentUser === ADMIN_ID);
             
             const div = document.createElement('div');
             div.className = 'quiz-card';
@@ -68,7 +81,7 @@ async function initRealtime() {
             const btnJugar = document.createElement('button');
             btnJugar.className = "btn-main";
             
-            if (isPlayed) {
+            if (isPlayed && !isAdmin) {
                 btnJugar.innerText = "Ya jugaste este quiz";
                 btnJugar.disabled = true;
                 btnJugar.style.background = "#b2bec3";
@@ -78,11 +91,11 @@ async function initRealtime() {
             }
             div.appendChild(btnJugar);
 
-            // CONTROL DE QUIZZES (Para autor O para Admin)
+            // Ajustes: Se activan si eres el autor O si eres el ADMIN
             if (q.author.toLowerCase() === currentUser || isAdmin) {
                 const btnAjustes = document.createElement('button');
                 btnAjustes.className = "btn-small";
-                btnAjustes.innerText = isAdmin && q.author.toLowerCase() !== currentUser ? "⚙️ Ajustes (Admin)" : "⚙️ Ajustes";
+                btnAjustes.innerText = isAdmin && q.author.toLowerCase() !== currentUser ? "⚙️ Gestionar (Admin)" : "⚙️ Ajustes";
                 btnAjustes.style.marginTop = "10px";
                 btnAjustes.onclick = () => openSettings(q);
                 div.appendChild(btnAjustes);
@@ -106,24 +119,20 @@ async function initRealtime() {
     });
 }
 
-// RESTAURAR RANKING (Función Admin)
+// Función exclusiva para el usuario Maestro
 async function resetRanking() {
-    if (!confirm("⚠️ ¿ESTÁS SEGURO? Esto borrará TODOS los puntos y permitirá que todos vuelvan a jugar los quizzes.")) return;
-    
+    if (!confirm("⚠️ ¿BORRAR TODO EL RANKING? Los usuarios podrán volver a jugar todo.")) return;
     try {
         const scoresSnap = await getDocs(collection(window.db, "scores"));
         const batch = writeBatch(window.db);
-        scoresSnap.forEach((d) => {
-            batch.delete(d.ref);
-        });
+        scoresSnap.forEach((d) => batch.delete(d.ref));
         await batch.commit();
-        alert("Ranking restaurado y historial de juegos limpio.");
+        alert("Ranking y progreso reiniciados.");
         location.reload();
-    } catch (e) {
-        alert("Error al restaurar");
-    }
+    } catch (e) { alert("Error al restaurar"); }
 }
 
+// ... (Las funciones startQuiz, openSettings y eventos se mantienen igual que la v1.6) ...
 function startQuiz(quiz) {
     showScreen('quiz-screen');
     document.getElementById('current-quiz-title').innerText = quiz.title;
@@ -153,14 +162,12 @@ function startQuiz(quiz) {
 function openSettings(quiz) {
     document.getElementById('settings-quiz-title').innerText = `Ajustes: ${quiz.title}`;
     showScreen('settings-screen');
-
     document.getElementById('btn-delete-quiz').onclick = async () => {
         if(confirm("¿Eliminar este quiz definitivamente?")) {
             await deleteDoc(doc(window.db, "quizzes", quiz.id));
             window.showHome();
         }
     };
-
     document.getElementById('btn-view-responses').onclick = async () => {
         showScreen('responses-screen');
         const table = document.getElementById('responses-table');
