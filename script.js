@@ -1,71 +1,52 @@
-import { 
-    collection, addDoc, onSnapshot, doc, getDoc, setDoc, serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, addDoc, onSnapshot, doc, getDoc, setDoc, serverTimestamp } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- ESTADO DE LA APP ---
 let currentUser = localStorage.getItem('quizUser') || null;
 
-// --- NAVEGACIÓN (Mantiene tu diseño CSS) ---
 function showScreen(id) {
-    const screens = ['login-screen', 'home-screen', 'editor-screen', 'quiz-screen', 'settings-screen'];
-    screens.forEach(s => {
-        const el = document.getElementById(s);
-        if (el) el.classList.add('hidden'); // Usa tu clase .hidden de CSS
-    });
-    const target = document.getElementById(id);
-    if (target) target.classList.remove('hidden');
+    document.querySelectorAll('.container').forEach(s => s.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
 }
 
-// --- LOGICA DE USUARIOS ---
+// LOGIN
 async function handleLogin() {
     const name = document.getElementById('user-name-input').value.trim();
     const pass = document.getElementById('user-pass-input').value.trim();
+    if (!name || !pass) return alert("Faltan datos");
 
-    if (!name || !pass) return alert("Escribe usuario y contraseña");
+    const userRef = doc(window.db, "users", name.toLowerCase());
+    const snap = await getDoc(userRef);
 
-    try {
-        const userRef = doc(window.db, "users", name.toLowerCase());
-        const snap = await getDoc(userRef);
+    if (snap.exists() && snap.data().pass !== pass) return alert("Contraseña incorrecta");
+    if (!snap.exists()) await setDoc(userRef, { originalName: name, pass: pass });
 
-        if (snap.exists()) {
-            if (snap.data().pass === pass) {
-                loginSuccess(name);
-            } else {
-                alert("Contraseña incorrecta");
-            }
-        } else {
-            await setDoc(userRef, { originalName: name, pass: pass });
-            loginSuccess(name);
-        }
-    } catch (e) {
-        alert("Error de conexión");
-    }
-}
-
-function loginSuccess(name) {
     currentUser = name;
     localStorage.setItem('quizUser', name);
     showHome();
 }
 
 function showHome() {
-    if (!currentUser) {
-        showScreen('login-screen');
-    } else {
-        showScreen('home-screen');
-        const display = document.getElementById('user-display');
-        if (display) display.innerText = `👤 ${currentUser}`;
-        listenData();
-    }
+    if (!currentUser) return showScreen('login-screen');
+    showScreen('home-screen');
+    document.getElementById('user-display').innerText = `👤 ${currentUser}`;
+    
+    // Cargar Quizzes en tiempo real
+    onSnapshot(collection(window.db, "quizzes"), (snap) => {
+        const list = document.getElementById('quiz-list');
+        list.innerHTML = "";
+        snap.forEach(d => {
+            const q = d.data();
+            list.innerHTML += `<div class="quiz-card"><b>${q.title}</b><br><small>Por: ${q.author}</small></div>`;
+        });
+    });
 }
 
-// --- CREAR Y GUARDAR QUIZ ---
+// PUBLICAR QUIZ (ESTO ES LO QUE NO TE FUNCIONABA)
 async function saveNewQuiz() {
     const title = document.getElementById('quiz-title-input').value.trim();
     const question = document.getElementById('q-text').value.trim();
-    const options = Array.from(document.querySelectorAll('.opt-input'))
-                         .map(input => input.value.trim())
-                         .filter(val => val !== "");
+    const inputs = document.querySelectorAll('.opt-input');
+    const options = Array.from(inputs).map(i => i.value.trim()).filter(v => v !== "");
 
     if (!title || !question || options.length < 2) {
         return alert("Completa el título, la pregunta y al menos 2 opciones.");
@@ -79,83 +60,25 @@ async function saveNewQuiz() {
             author: currentUser,
             createdAt: serverTimestamp()
         });
-        alert("¡Quiz publicado con éxito! 🚀");
-        
-        // Limpiar formulario y volver
-        document.getElementById('quiz-title-input').value = "";
-        document.getElementById('q-text').value = "";
+        alert("¡Quiz publicado!");
         showHome();
     } catch (e) {
         alert("Error al publicar");
     }
 }
 
-// --- CARGAR DATOS (QUIZZES Y RANKING) ---
-function listenData() {
-    // Lista de Quizzes
-    onSnapshot(collection(window.db, "quizzes"), (snap) => {
-        const list = document.getElementById('quiz-list');
-        if (!list) return;
-        list.innerHTML = "";
-        snap.forEach(d => {
-            const q = d.data();
-            const div = document.createElement('div');
-            div.className = 'quiz-card'; // Mantiene tu diseño de tarjeta
-            div.innerHTML = `
-                <b>${q.title}</b><br><small>Por: ${q.author}</small><br>
-                <button class="btn-main" style="width:auto; margin-top:10px">Jugar</button>
-            `;
-            list.appendChild(div);
-        });
-    });
-
-    // Ranking Global
-    onSnapshot(collection(window.db, "scores"), (snap) => {
-        const rList = document.getElementById('global-ranking-list');
-        if (!rList) return;
-        let totals = {};
-        snap.forEach(d => {
-            const s = d.data();
-            totals[s.user] = (totals[s.user] || 0) + (s.points || 0);
-        });
-        const sorted = Object.entries(totals).sort((a,b) => b[1]-a[1]).slice(0,5);
-        rList.innerHTML = sorted.map(([u, p]) => `<div class="ranking-item">${u}: <b>${p} pts</b></div>`).join('');
-    });
-}
-
-// --- ASIGNACIÓN DE EVENTOS ---
+// ASIGNAR BOTONES
 document.addEventListener('DOMContentLoaded', () => {
-    // Botones de sesión
-    const loginBtn = document.getElementById('btn-login-action');
-    if (loginBtn) loginBtn.onclick = handleLogin;
-
-    const logoutBtn = document.getElementById('btn-logout');
-    if (logoutBtn) logoutBtn.onclick = () => {
-        localStorage.removeItem('quizUser');
-        location.reload();
+    document.getElementById('btn-login-action').onclick = handleLogin;
+    document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
+    document.getElementById('btn-go-editor').onclick = () => showScreen('editor-screen');
+    document.getElementById('btn-back-home').onclick = () => showHome();
+    document.getElementById('btn-save-quiz').onclick = saveNewQuiz;
+    document.getElementById('btn-add-option').onclick = () => {
+        const inp = document.createElement('input');
+        inp.className = "opt-input"; inp.placeholder = "Incorrecta";
+        document.getElementById('options-setup').appendChild(inp);
     };
-
-    // Botones de pantalla
-    const goEditor = document.getElementById('btn-go-editor');
-    if (goEditor) goEditor.onclick = () => showScreen('editor-screen');
-
-    const backHome = document.getElementById('btn-back-home');
-    if (backHome) backHome.onclick = () => showHome();
-
-    // Lógica del Editor
-    const saveBtn = document.getElementById('btn-save-quiz');
-    if (saveBtn) saveBtn.onclick = saveNewQuiz;
-
-    const addOptBtn = document.getElementById('btn-add-option');
-    if (addOptBtn) {
-        addOptBtn.onclick = () => {
-            const input = document.createElement('input');
-            input.className = "opt-input";
-            input.placeholder = "Otra respuesta incorrecta";
-            document.getElementById('options-setup').appendChild(input);
-        };
-    }
 });
 
-// Arrancar
 showHome();
