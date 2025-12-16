@@ -2,33 +2,49 @@ import {
     collection, addDoc, onSnapshot, deleteDoc, doc, getDoc, setDoc, getDocs 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// Variables globales
 let currentUser = localStorage.getItem('quizUser') || null;
 let quizToEdit = null;
 
 // --- NAVEGACIÓN ---
 function showScreen(id) {
-    document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
-    document.getElementById(id).classList.remove('hidden');
+    const screens = ['login-screen', 'home-screen', 'editor-screen', 'quiz-screen', 'settings-screen'];
+    screens.forEach(s => {
+        const el = document.getElementById(s);
+        if (el) el.classList.add('hidden');
+    });
+    const target = document.getElementById(id);
+    if (target) target.classList.remove('hidden');
 }
 
-// --- LOGICA DE USUARIOS ---
+// --- LÓGICA DE USUARIOS ---
 async function handleLogin() {
-    const name = document.getElementById('user-name-input').value.trim();
-    const pass = document.getElementById('user-pass-input').value.trim();
+    const nameInput = document.getElementById('user-name-input');
+    const passInput = document.getElementById('user-pass-input');
+    
+    const name = nameInput.value.trim();
+    const pass = passInput.value.trim();
+
     if (!name || !pass) return alert("Escribe usuario y contraseña");
 
-    const userRef = doc(window.db, "users", name.toLowerCase());
-    const snap = await getDoc(userRef);
+    try {
+        const userRef = doc(window.db, "users", name.toLowerCase());
+        const snap = await getDoc(userRef);
 
-    if (snap.exists()) {
-        if (snap.data().pass === pass) {
-            loginSuccess(name);
+        if (snap.exists()) {
+            if (snap.data().pass === pass) {
+                loginSuccess(name);
+            } else {
+                alert("Contraseña incorrecta");
+            }
         } else {
-            alert("Contraseña incorrecta");
+            // Si no existe, lo crea (Registro automático)
+            await setDoc(userRef, { originalName: name, pass: pass });
+            loginSuccess(name);
         }
-    } else {
-        await setDoc(userRef, { originalName: name, pass: pass });
-        loginSuccess(name);
+    } catch (error) {
+        console.error("Error en login:", error);
+        alert("Error de conexión con la base de datos");
     }
 }
 
@@ -43,16 +59,18 @@ function showHome() {
         showScreen('login-screen');
     } else {
         showScreen('home-screen');
-        document.getElementById('user-display').innerText = `👤 ${currentUser}`;
+        const display = document.getElementById('user-display');
+        if (display) display.innerText = `👤 ${currentUser}`;
         listenData();
     }
 }
 
 // --- DATOS EN TIEMPO REAL ---
 function listenData() {
-    // Quizzes
+    // Escuchar Quizzes
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
+        if (!list) return;
         list.innerHTML = "";
         snap.forEach(d => {
             const q = { id: d.id, ...d.data() };
@@ -63,92 +81,81 @@ function listenData() {
                 <b>${q.title}</b><br><small>Por: ${q.author}</small><br>
                 <div style="margin-top:10px">
                     <button class="btn-main" style="width:auto; padding:5px 15px" id="play-${q.id}">Jugar</button>
-                    ${isOwner ? `<button class="btn-small" style="background:none; border:1px solid #ccc; color:#666" id="set-${q.id}">⚙️ Ajustes</button>` : ''}
+                    ${isOwner ? `<button class="btn-small" style="background:none; border:1px solid #ccc; color:#666; margin-left:10px" id="set-${q.id}">⚙️ Ajustes</button>` : ''}
                 </div>
             `;
             list.appendChild(div);
+            
             document.getElementById(`play-${q.id}`).onclick = () => startQuiz(q);
-            if(isOwner) document.getElementById(`set-${q.id}`).onclick = () => openSettings(q);
+            if(isOwner) {
+                const setBtn = document.getElementById(`set-${q.id}`);
+                if (setBtn) setBtn.onclick = () => openSettings(q);
+            }
         });
     });
 
-    // Ranking
+    // Escuchar Ranking Global
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
+        if (!rList) return;
         let totals = {};
         snap.forEach(d => {
             const s = d.data();
-            totals[s.user] = (totals[s.user] || 0) + s.points;
+            totals[s.user] = (totals[s.user] || 0) + (s.points || 0);
         });
         const sorted = Object.entries(totals).sort((a,b) => b[1]-a[1]).slice(0,5);
         rList.innerHTML = sorted.map(([u, p]) => `<div class="ranking-item">${u}: <b>${p} pts</b></div>`).join('');
     });
 }
 
-// --- FUNCIONES DE JUEGO Y EDITOR ---
-async function saveNewQuiz() {
-    const title = document.getElementById('quiz-title-input').value;
-    const q = document.getElementById('q-text').value;
-    const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim()).filter(v => v !== "");
-    if (!title || !q || opts.length < 2) return alert("Faltan datos");
-
-    await addDoc(collection(window.db, "quizzes"), { author: currentUser, title, q, opts });
-    showHome();
-}
-
+// --- FUNCIONES DE JUEGO ---
 function startQuiz(quiz) {
     showScreen('quiz-screen');
     document.getElementById('current-quiz-title').innerText = quiz.title;
     const container = document.getElementById('options-container');
     container.innerHTML = `<h3 style="margin-bottom:20px">${quiz.q}</h3>`;
     
-    quiz.opts.map((t, i) => ({t, i})).sort(() => Math.random() - 0.5).forEach(opt => {
+    // Desordenar opciones
+    const options = quiz.opts.map((text, index) => ({ text, isCorrect: index === 0 }));
+    options.sort(() => Math.random() - 0.5);
+
+    options.forEach(opt => {
         const btn = document.createElement('button');
-        btn.innerText = opt.t; btn.className = 'option-btn';
+        btn.innerText = opt.text;
+        btn.className = 'option-btn';
         btn.onclick = async () => {
-            const correct = (opt.i === 0);
             await addDoc(collection(window.db, "scores"), {
-                user: currentUser, quizId: quiz.id, points: correct ? 1 : 0, choice: opt.t
+                user: currentUser,
+                quizId: quiz.id,
+                points: opt.isCorrect ? 1 : 0,
+                choice: opt.text,
+                date: new Date()
             });
-            alert(correct ? "✅ ¡Correcto!" : "❌ Incorrecto");
+            alert(opt.isCorrect ? "✅ ¡Correcto!" : "❌ Incorrecto");
             showHome();
         };
         container.appendChild(btn);
     });
 }
 
-async function openSettings(quiz) {
-    quizToEdit = quiz;
-    showScreen('settings-screen');
-    const box = document.getElementById('quiz-info-box');
-    box.innerHTML = `Cargando respuestas...`;
-    
-    const sSnap = await getDocs(collection(window.db, "scores"));
-    let resHtml = `<b>Pregunta:</b> ${quiz.q}<br><b>Correcta:</b> ${quiz.opts[0]}<hr><b>Jugadores:</b><br>`;
-    sSnap.forEach(d => {
-        if(d.data().quizId === quiz.id) resHtml += `<div>• ${d.data().user}: ${d.data().choice}</div>`;
+// --- CONFIGURACIÓN DE EVENTOS (BOTONES) ---
+// Usamos este método porque los módulos no permiten onclick en HTML directamente
+document.addEventListener('DOMContentLoaded', () => {
+    const loginBtn = document.getElementById('btn-login-action');
+    if (loginBtn) loginBtn.onclick = handleLogin;
+
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) logoutBtn.onclick = () => { localStorage.removeItem('quizUser'); location.reload(); };
+
+    const goEditorBtn = document.getElementById('btn-go-editor');
+    if (goEditorBtn) goEditorBtn.onclick = () => showScreen('editor-screen');
+
+    const backBtns = ['btn-back-home', 'btn-back-home-set'];
+    backBtns.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.onclick = () => showHome();
     });
-    box.innerHTML = resHtml;
-}
+});
 
-// --- ASIGNAR EVENTOS A BOTONES ---
-document.getElementById('btn-login-action').onclick = handleLogin;
-document.getElementById('btn-logout').onclick = () => { localStorage.removeItem('quizUser'); location.reload(); };
-document.getElementById('btn-go-editor').onclick = () => showScreen('editor-screen');
-document.getElementById('btn-back-home').onclick = () => showHome();
-document.getElementById('btn-back-home-set').onclick = () => showHome();
-document.getElementById('btn-save-quiz').onclick = saveNewQuiz;
-document.getElementById('btn-add-option').onclick = () => {
-    const input = document.createElement('input');
-    input.className = "opt-input"; input.placeholder = "Otra respuesta incorrecta";
-    document.getElementById('options-setup').appendChild(input);
-};
-document.getElementById('btn-delete-quiz').onclick = async () => {
-    if(confirm("¿Seguro que quieres borrar este quiz?")) {
-        await deleteDoc(doc(window.db, "quizzes", quizToEdit.id));
-        showHome();
-    }
-};
-
-// Iniciar app
+// Arrancar la app
 showHome();
