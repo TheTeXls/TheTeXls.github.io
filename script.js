@@ -55,7 +55,6 @@ async function initRealtime() {
         playedQuizIds = scoreSnap.docs.map(d => d.data().quizId);
     }
 
-    // LISTA DE QUIZZES
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
         list.innerHTML = "<h3>Quizzes Disponibles</h3>";
@@ -93,7 +92,6 @@ async function initRealtime() {
         });
     });
 
-    // RANKING + BOTÓN RESET (ADMIN)
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         rList.innerHTML = "<h3>🏆 Ranking Global</h3>";
@@ -105,12 +103,9 @@ async function initRealtime() {
                 totals[u] = (totals[u] || 0) + (s.points || 0);
             }
         });
-        
         Object.entries(totals).sort((a,b) => b[1]-a[1]).forEach(([u, p]) => {
             rList.innerHTML += `<div class="ranking-item"><span>${u}</span><b>${p} pts</b></div>`;
         });
-
-        // El botón aparece pequeño solo para el admin debajo del ranking
         if (currentUser === ADMIN_ID) {
             const btnReset = document.createElement('button');
             btnReset.innerText = "⚠️ Restaurar Ranking";
@@ -183,6 +178,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-logout').onclick = () => { localStorage.clear(); window.location.reload(); };
     document.getElementById('btn-go-editor').onclick = () => showScreen('editor-screen');
     document.getElementById('btn-back-home').onclick = () => window.showHome();
+    
+    // CORRECCIÓN: Eventos de los botones de Volver en ajustes y respuestas
+    document.getElementById('btn-settings-back').onclick = () => window.showHome();
+    document.getElementById('btn-responses-back').onclick = () => showScreen('settings-screen');
+
     document.getElementById('btn-save-quiz').onclick = async () => {
         const title = document.getElementById('quiz-title-input').value;
         const qText = document.getElementById('q-text').value;
