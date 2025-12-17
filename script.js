@@ -7,11 +7,11 @@ const ADMIN_PASS = "gem";
 let currentUser = localStorage.getItem('quizUser') || null;
 let displayName = localStorage.getItem('quizDisplayName') || null;
 
-// Variables para el flujo de preguntas
-let tempQuestions = []; // Para el editor
-let activeQuiz = null;   // Para el juego
-let currentQIdx = 0;     // Para el juego
-let sessionScore = 0;    // Puntos acumulados en la partida actual
+// Variables de estado
+let tempQuestions = [];
+let activeQuiz = null;
+let currentQIdx = 0;
+let sessionScore = 0;
 
 function showScreen(id) {
     document.querySelectorAll('.container').forEach(s => s.classList.add('hidden'));
@@ -25,7 +25,6 @@ window.showHome = function() {
     initRealtime();
 };
 
-// --- LOGIN Y REALTIME ---
 async function handleLogin() {
     const rawName = document.getElementById('user-name-input').value.trim();
     const pass = document.getElementById('user-pass-input').value.trim();
@@ -62,16 +61,13 @@ async function initRealtime() {
         playedQuizIds = scoreSnap.docs.map(d => d.data().quizId);
     }
 
+    // Listener de Quizzes
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
         list.innerHTML = "<h3>Quizzes Disponibles</h3>";
-        
         snap.forEach(d => {
             const q = { id: d.id, ...d.data() };
-            
-            // --- PARCHE DE SEGURIDAD (CORRECCIÓN DEL ERROR LENGTH) ---
             const numPreguntas = q.questions ? q.questions.length : 0;
-            
             const isPlayed = playedQuizIds.includes(q.id);
             const isAdmin = (currentUser === ADMIN_ID);
             const isAuthor = (q.author && q.author.toLowerCase() === currentUser);
@@ -83,9 +79,8 @@ async function initRealtime() {
             const btnJugar = document.createElement('button');
             btnJugar.className = "btn-main";
             
-            // Lógica de visualización de botones corregida
             if (numPreguntas === 0 && !isAdmin) {
-                btnJugar.innerText = "Quiz no compatible ⚠️";
+                btnJugar.innerText = "No compatible ⚠️";
                 btnJugar.disabled = true;
                 btnJugar.style.background = "#fab1a0";
             } else if (isAdmin) {
@@ -117,6 +112,7 @@ async function initRealtime() {
         });
     });
 
+    // Listener de Rankings con Botón Reset Reparado
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         rList.innerHTML = "<h3>🏆 Ranking Global</h3>";
@@ -132,12 +128,27 @@ async function initRealtime() {
             const nameToShow = nameMap[u] || u;
             rList.innerHTML += `<div class="ranking-item"><span>${nameToShow}</span><b>${p} pts</b></div>`;
         });
+
+        if (currentUser === ADMIN_ID) {
+            const btnReset = document.createElement('button');
+            btnReset.className = "btn-main btn-reset-admin";
+            btnReset.innerText = "♻️ Resetear Rankings";
+            btnReset.onclick = async () => {
+                if(confirm("¿Borrar todos los puntos del ranking?")){
+                    const batch = writeBatch(window.db);
+                    const snaps = await getDocs(collection(window.db, "scores"));
+                    snaps.forEach(d => batch.delete(d.ref));
+                    await batch.commit();
+                    alert("Ranking reiniciado.");
+                }
+            };
+            rList.appendChild(btnReset);
+        }
     });
 }
 
-// --- LÓGICA DE JUEGO MULTIPREGUNTA ---
+// --- JUEGO ---
 function startQuizSession(quiz) {
-    if (!quiz.questions || quiz.questions.length === 0) return alert("Este quiz no tiene preguntas válidas.");
     activeQuiz = quiz;
     currentQIdx = 0;
     sessionScore = 0;
@@ -148,12 +159,9 @@ function startQuizSession(quiz) {
 function renderQuestion() {
     const qData = activeQuiz.questions[currentQIdx];
     document.getElementById('current-quiz-title').innerText = `${activeQuiz.title} (${currentQIdx + 1}/${activeQuiz.questions.length})`;
-    
     const cont = document.getElementById('options-container');
     cont.innerHTML = `<p style="font-size:18px; margin-bottom:20px;">${qData.text}</p>`;
-    
     const shuffledOpts = [...qData.opts].sort(() => Math.random() - 0.5);
-
     shuffledOpts.forEach(opt => {
         const btn = document.createElement('button');
         btn.className = "btn-main";
@@ -165,51 +173,39 @@ function renderQuestion() {
 }
 
 async function handleAnswer(isCorrect) {
-    if (isCorrect) {
-        sessionScore++;
-        alert("✅ ¡Correcto!");
-    } else {
-        alert("❌ Incorrecto");
-    }
-
+    if (isCorrect) { sessionScore++; alert("✅ ¡Correcto!"); } 
+    else { alert("❌ Incorrecto"); }
     currentQIdx++;
-
     if (currentQIdx < activeQuiz.questions.length) {
         renderQuestion();
     } else {
-        alert(`🏁 ¡Quiz terminado! Puntuación: ${sessionScore}/${activeQuiz.questions.length}`);
-        
+        alert(`🏁 Fin. Puntuación: ${sessionScore}/${activeQuiz.questions.length}`);
         if (currentUser !== ADMIN_ID) {
             await addDoc(collection(window.db, "scores"), {
-                user: currentUser,
-                points: sessionScore,
-                quizId: activeQuiz.id,
-                date: serverTimestamp()
+                user: currentUser, points: sessionScore, quizId: activeQuiz.id, date: serverTimestamp()
             });
         }
         window.showHome();
     }
 }
 
-// --- LÓGICA DEL EDITOR ---
+// --- EDITOR CON LÍMITES 5-10 ---
 function nextQuestion() {
-    const text = document.getElementById('q-text').value;
-    const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value);
-    
-    if(!text || opts.some(o => !o)) return alert("Completa la pregunta y opciones");
+    if (tempQuestions.length >= 10) return alert("Máximo 10 preguntas alcanzado.");
+    const text = document.getElementById('q-text').value.trim();
+    const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
+    if(!text || opts.some(o => !o)) return alert("Completa la pregunta y opciones.");
     
     tempQuestions.push({ text, opts });
-    
     document.getElementById('q-text').value = "";
     document.getElementById('options-setup').innerHTML = `
         <input type="text" class="opt-input" placeholder="Opción Correcta">
         <input type="text" class="opt-input" placeholder="Opción Incorrecta">
     `;
     document.getElementById('q-number-display').innerText = `Pregunta #${tempQuestions.length + 1}`;
-    document.getElementById('questions-added-count').innerText = `Preguntas añadidas: ${tempQuestions.length}`;
+    document.getElementById('questions-added-count').innerText = `Preguntas preparadas: ${tempQuestions.length}`;
 }
 
-// --- AJUSTES ---
 function openSettings(quiz) {
     document.getElementById('settings-quiz-title').innerText = `Ajustes: ${quiz.title}`;
     showScreen('settings-screen');
@@ -233,7 +229,7 @@ function openSettings(quiz) {
     };
 }
 
-// --- EVENTOS DOM ---
+// --- EVENTOS ---
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login-action').onclick = handleLogin;
     document.getElementById('btn-logout').onclick = () => { localStorage.clear(); window.location.reload(); };
@@ -254,17 +250,26 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-next-q').onclick = nextQuestion;
 
     document.getElementById('btn-save-quiz').onclick = async () => {
-        const title = document.getElementById('quiz-title-input').value;
-        if(!title || tempQuestions.length === 0) return alert("Añade un título y al menos una pregunta");
+        const title = document.getElementById('quiz-title-input').value.trim();
+        const curQText = document.getElementById('q-text').value.trim();
+        const curOpts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
+
+        // Punto 7: Auto-guardar la pregunta actual si está completa
+        if (curQText !== "" && !curOpts.some(o => o === "")) {
+            if (tempQuestions.length < 10) {
+                tempQuestions.push({ text: curQText, opts: curOpts });
+            }
+        }
+
+        // Punto 1: Validar límites
+        if (!title) return alert("Falta el título.");
+        if (tempQuestions.length < 5) return alert(`Mínimo 5 preguntas (llevas ${tempQuestions.length})`);
+        if (tempQuestions.length > 10) return alert("Máximo 10 preguntas.");
         
         await addDoc(collection(window.db, "quizzes"), {
-            title,
-            questions: tempQuestions,
-            author: displayName,
-            createdAt: serverTimestamp()
+            title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp()
         });
-        
-        alert("¡Quiz Publicado con éxito!");
+        alert("¡Publicado!");
         window.showHome();
     };
 
