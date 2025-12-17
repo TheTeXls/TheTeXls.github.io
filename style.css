@@ -36,3 +36,28 @@ hr {
     border-radius: 10px;
     margin: 10px 0;
 }
+.section-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 40px 0 20px 0;
+    color: #a29bfe; /* Color suave para el texto */
+    font-weight: bold;
+    font-size: 0.9em;
+    letter-spacing: 1px;
+}
+
+.section-divider::before,
+.section-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 2px solid #dfe6e9; /* Línea gris clara */
+}
+
+.section-divider:not(:empty)::before {
+    margin-right: .5em;
+}
+
+.section-divider:not(:empty)::after {
+    margin-left: .5em;
+}

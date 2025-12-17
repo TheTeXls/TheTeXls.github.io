@@ -3,103 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quizzes GEM v1.9 - Multi-Pregunta</title> 
+    <title>Quiz Master Pro - v1.9.3</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="login-screen" class="container">
-        <h1>🚀 Quizzes GEM</h1>
-        <p>Introduce tus datos para jugar</p>
+        <h1>🎮 Quiz App</h1>
+        <p>Ingresa para jugar o crear quizzes</p>
         <input type="text" id="user-name-input" placeholder="Nombre de usuario">
         <input type="password" id="user-pass-input" placeholder="Contraseña">
         <button id="btn-login-action" class="btn-main">Entrar / Registrarse</button>
     </div>
 
     <div id="home-screen" class="container hidden">
-        <div class="header-user">
-            <span id="user-display"></span>
-            <button id="btn-logout" class="btn-small">Salir</button>
+        <div class="header">
+            <span id="user-display">👤 Usuario</span>
+            <button id="btn-logout" class="btn-small">Cerrar Sesión</button>
         </div>
-        <h1>🎮 Menú Principal</h1>
-        <button id="btn-go-editor" class="btn-main" style="background:#00b894; margin-bottom:20px;">➕ Crear Nuevo Quiz</button>
         
+        <button id="btn-go-editor" class="btn-main" style="background: #00b894; margin-bottom: 20px;">
+            ➕ Crear Nuevo Quiz
+        </button>
+
         <div id="quiz-list">
-            <p>Cargando quizzes...</p>
+            <h3>Quizzes Disponibles</h3>
+            </div>
+
+        <div class="section-divider">
+            <span>🏆 TABLA DE POSICIONES</span>
         </div>
 
         <div id="global-ranking-list">
-            <h3>🏆 Ranking Global</h3>
             </div>
-    </div>
-
-    <div id="editor-screen" class="container hidden">
-        <button id="btn-back-home" class="btn-small">← Volver al Menú</button>
-        <h2>📝 Creador de Quizzes</h2>
-        
-        <div id="setup-quiz-info">
-            <input type="text" id="quiz-title-input" placeholder="Título del Quiz (Ej: Marvel Trivia)">
-            <p style="font-size: 12px; color: #666;">Define el título y luego añade tus preguntas abajo.</p>
-        </div>
-
-        <hr style="margin: 20px 0; border: 0.5px solid #eee;">
-
-        <div id="question-editor" style="background: #f9f9f9; padding: 15px; border-radius: 10px; border: 2px dashed #6c5ce7;">
-            <h4 id="q-number-display" style="color: #6c5ce7; margin-top: 0;">Pregunta #1</h4>
-            <input type="text" id="q-text" placeholder="¿Cuál es la pregunta?">
-            
-            <div id="options-setup">
-                <p style="font-size: 11px; text-align: left; margin: 5px 0; color: #2d3436;"><b>Importante:</b> La primera opción SIEMPRE debe ser la correcta.</p>
-                <input type="text" class="opt-input" placeholder="Opción Correcta">
-                <input type="text" class="opt-input" placeholder="Opción Incorrecta">
-            </div>
-            
-            <button id="btn-add-option" class="btn-small" style="margin-top: 5px;">+ Añadir más opciones</button>
-            <button id="btn-next-q" class="btn-main" style="background:#0984e3; margin-top: 20px;">Siguiente Pregunta ➡️</button>
-        </div>
-
-        <div id="questions-added-count" style="margin: 15px 0; font-weight: bold; color: #2d3436;">Preguntas preparadas: 0</div>
-        <button id="btn-save-quiz" class="btn-main" style="background:#00b894;">✨ Publicar Quiz Completo</button>
     </div>
 
     <div id="quiz-screen" class="container hidden">
-        <h2 id="current-quiz-title" style="color: #6c5ce7;"></h2>
+        <h2 id="current-quiz-title">Cargando...</h2>
         <div id="options-container">
             </div>
     </div>
 
+    <div id="editor-screen" class="container hidden">
+        <h2>🛠️ Creador de Quizzes</h2>
+        <p id="questions-added-count">Preguntas preparadas: 0</p>
+        
+        <div class="editor-box">
+            <input type="text" id="quiz-title-input" placeholder="Título del Quiz (ej: Cultura General)">
+            <hr>
+            <h3 id="q-number-display">Pregunta #1</h3>
+            <textarea id="q-text" placeholder="Escribe tu pregunta aquí..."></textarea>
+            
+            <div id="options-setup">
+                </div>
+            
+            <button id="btn-add-option" class="btn-small" style="background: #0984e3; margin-bottom: 10px;">
+                ➕ Añadir opción (Máx 6)
+            </button>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-next-q" class="btn-main" style="background: #6c5ce7;">Siguiente Pregunta</button>
+                <button id="btn-save-quiz" class="btn-main" style="background: #27ae60;">Publicar Quiz</button>
+            </div>
+        </div>
+        <button id="btn-back-home" class="btn-small">⬅️ Cancelar y Volver</button>
+    </div>
+
     <div id="settings-screen" class="container hidden">
-        <button id="btn-settings-back" class="btn-small">← Volver</button>
-        <h2 id="settings-quiz-title">Gestionar Quiz</h2>
-        <button id="btn-view-responses" class="btn-main" style="background:#0984e3">📊 Ver Quién Participó</button>
-        <button id="btn-delete-quiz" class="btn-main" style="background:#d63031">🗑️ Eliminar este Quiz</button>
+        <h2 id="settings-quiz-title">Ajustes</h2>
+        <button id="btn-view-responses" class="btn-main" style="background: #0984e3;">Ver quién respondió</button>
+        <button id="btn-delete-quiz" class="btn-main" style="background: #d63031; margin-top: 10px;">Borrar Quiz</button>
+        <button id="btn-settings-back" class="btn-small" style="margin-top: 20px;">⬅️ Volver</button>
     </div>
 
     <div id="responses-screen" class="container hidden">
-        <button id="btn-responses-back" class="btn-small">← Volver</button>
-        <h2>📈 Resultados Globales</h2>
+        <h2>👥 Jugadores que completaron este quiz</h2>
         <div id="responses-table">
             </div>
+        <button id="btn-responses-back" class="btn-small">⬅️ Volver a Ajustes</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        
+
+        // CONFIGURACIÓN DE TU FIREBASE (Asegúrate de que sean tus datos)
         const firebaseConfig = {
-            apiKey: "AiZaSyAeDDT7easViii62TAbClEavEkeEy-aFL0",
-            authDomain: "quizzesgem.firebaseapp.com",
-            projectId: "quizzesgem",
-            storageBucket: "quizzesgem.firebasestorage.app",
-            messagingSenderId: "997547868244",
-            appId: "1:997547868244:web:d8a84fca922730aeabadc1"
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_PROYECTO.firebaseapp.com",
+            projectId: "TU_PROYECTO",
+            storageBucket: "TU_PROYECTO.appspot.com",
+            messagingSenderId: "ID",
+            appId: "APP_ID"
         };
-        
+
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app);
     </script>
-
     <script type="module" src="script.js"></script>
-
 </body>
 </html>
