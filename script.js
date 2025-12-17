@@ -25,7 +25,7 @@ window.showHome = function() {
     initRealtime();
 };
 
-// --- LOGIN Y REALTIME (Se mantiene igual que v1.8 para no romper nada) ---
+// --- LOGIN Y REALTIME ---
 async function handleLogin() {
     const rawName = document.getElementById('user-name-input').value.trim();
     const pass = document.getElementById('user-pass-input').value.trim();
@@ -65,20 +65,30 @@ async function initRealtime() {
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
         list.innerHTML = "<h3>Quizzes Disponibles</h3>";
+        
         snap.forEach(d => {
             const q = { id: d.id, ...d.data() };
+            
+            // --- PARCHE DE SEGURIDAD (CORRECCIÓN DEL ERROR LENGTH) ---
+            const numPreguntas = q.questions ? q.questions.length : 0;
+            
             const isPlayed = playedQuizIds.includes(q.id);
             const isAdmin = (currentUser === ADMIN_ID);
             const isAuthor = (q.author && q.author.toLowerCase() === currentUser);
             
             const div = document.createElement('div');
             div.className = 'quiz-card';
-            div.innerHTML = `<b>${q.title}</b><br><small>${q.questions.length} preguntas • Por: ${q.author}</small>`;
+            div.innerHTML = `<b>${q.title}</b><br><small>${numPreguntas} preguntas • Por: ${q.author}</small>`;
             
             const btnJugar = document.createElement('button');
             btnJugar.className = "btn-main";
             
-            if (isAdmin) {
+            // Lógica de visualización de botones corregida
+            if (numPreguntas === 0 && !isAdmin) {
+                btnJugar.innerText = "Quiz no compatible ⚠️";
+                btnJugar.disabled = true;
+                btnJugar.style.background = "#fab1a0";
+            } else if (isAdmin) {
                 btnJugar.innerText = "Probar (Admin) 🎮";
                 btnJugar.onclick = () => startQuizSession(q);
             } else if (isAuthor) {
@@ -127,6 +137,7 @@ async function initRealtime() {
 
 // --- LÓGICA DE JUEGO MULTIPREGUNTA ---
 function startQuizSession(quiz) {
+    if (!quiz.questions || quiz.questions.length === 0) return alert("Este quiz no tiene preguntas válidas.");
     activeQuiz = quiz;
     currentQIdx = 0;
     sessionScore = 0;
@@ -141,7 +152,6 @@ function renderQuestion() {
     const cont = document.getElementById('options-container');
     cont.innerHTML = `<p style="font-size:18px; margin-bottom:20px;">${qData.text}</p>`;
     
-    // Mezclar opciones para que la correcta no sea siempre la primera
     const shuffledOpts = [...qData.opts].sort(() => Math.random() - 0.5);
 
     shuffledOpts.forEach(opt => {
@@ -167,10 +177,8 @@ async function handleAnswer(isCorrect) {
     if (currentQIdx < activeQuiz.questions.length) {
         renderQuestion();
     } else {
-        // Fin del quiz
         alert(`🏁 ¡Quiz terminado! Puntuación: ${sessionScore}/${activeQuiz.questions.length}`);
         
-        // Solo guardamos si no es el autor (blindaje v1.8)
         if (currentUser !== ADMIN_ID) {
             await addDoc(collection(window.db, "scores"), {
                 user: currentUser,
@@ -192,7 +200,6 @@ function nextQuestion() {
     
     tempQuestions.push({ text, opts });
     
-    // Limpiar para la siguiente
     document.getElementById('q-text').value = "";
     document.getElementById('options-setup').innerHTML = `
         <input type="text" class="opt-input" placeholder="Opción Correcta">
@@ -202,7 +209,31 @@ function nextQuestion() {
     document.getElementById('questions-added-count').innerText = `Preguntas añadidas: ${tempQuestions.length}`;
 }
 
-// --- EVENTOS ---
+// --- AJUSTES ---
+function openSettings(quiz) {
+    document.getElementById('settings-quiz-title').innerText = `Ajustes: ${quiz.title}`;
+    showScreen('settings-screen');
+    document.getElementById('btn-delete-quiz').onclick = async () => {
+        if(confirm(`¿Borrar "${quiz.title}"?`)) {
+            await deleteDoc(doc(window.db, "quizzes", quiz.id));
+            window.showHome();
+        }
+    };
+    document.getElementById('btn-view-responses').onclick = async () => {
+        showScreen('responses-screen');
+        const table = document.getElementById('responses-table');
+        table.innerHTML = "Cargando...";
+        const qQuery = query(collection(window.db, "scores"), where("quizId", "==", quiz.id));
+        const snap = await getDocs(qQuery);
+        table.innerHTML = snap.empty ? "Sin respuestas." : "";
+        snap.forEach(d => {
+            const r = d.data();
+            table.innerHTML += `<div class="ranking-item"><span>${r.user}</span><b>${r.points} pts</b></div>`;
+        });
+    };
+}
+
+// --- EVENTOS DOM ---
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login-action').onclick = handleLogin;
     document.getElementById('btn-logout').onclick = () => { localStorage.clear(); window.location.reload(); };
