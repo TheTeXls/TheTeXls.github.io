@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Master Pro - v1.9.3</title>
+    <title>Quizzes GEM</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="login-screen" class="container">
-        <h1>🎮 Quiz App</h1>
+        <h1>🎮 Quizzes GEM</h1>
         <p>Ingresa para jugar o crear quizzes</p>
         <input type="text" id="user-name-input" placeholder="Nombre de usuario">
         <input type="password" id="user-pass-input" placeholder="Contraseña">
@@ -89,13 +89,13 @@
 
         // CONFIGURACIÓN DE TU FIREBASE (Asegúrate de que sean tus datos)
         const firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "TU_PROYECTO.firebaseapp.com",
-            projectId: "TU_PROYECTO",
-            storageBucket: "TU_PROYECTO.appspot.com",
-            messagingSenderId: "ID",
-            appId: "APP_ID"
-        };
+    apiKey: "AIzaSy...", // Tu API Key real
+    authDomain: "quizzesgem.firebaseapp.com", // Tu ID de proyecto real
+    projectId: "quizzesgem", 
+    storageBucket: "quizzesgem.appspot.com",
+    messagingSenderId: "...",
+    appId: "..."
+};
 
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app);
