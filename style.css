@@ -28,3 +28,11 @@ hr {
     color: #6c5ce7; 
     margin: 0 0 10px 0; 
 }
+#no-quizzes-msg {
+    padding: 20px;
+    color: #636e72;
+    font-style: italic;
+    background: #f1f2f6;
+    border-radius: 10px;
+    margin: 10px 0;
+}

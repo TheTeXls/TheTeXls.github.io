@@ -7,7 +7,6 @@ const ADMIN_PASS = "gem";
 let currentUser = localStorage.getItem('quizUser') || null;
 let displayName = localStorage.getItem('quizDisplayName') || null;
 
-// Variables de estado
 let tempQuestions = [];
 let activeQuiz = null;
 let currentQIdx = 0;
@@ -61,10 +60,16 @@ async function initRealtime() {
         playedQuizIds = scoreSnap.docs.map(d => d.data().quizId);
     }
 
-    // Listener de Quizzes
+    // PUNTO 5: Listener de Quizzes con mensaje de "Vacío"
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
         list.innerHTML = "<h3>Quizzes Disponibles</h3>";
+        
+        if (snap.empty) {
+            list.innerHTML += `<div id="no-quizzes-msg">No hay quizzes publicados en este momento 😴</div>`;
+            return;
+        }
+
         snap.forEach(d => {
             const q = { id: d.id, ...d.data() };
             const numPreguntas = q.questions ? q.questions.length : 0;
@@ -112,7 +117,6 @@ async function initRealtime() {
         });
     });
 
-    // Listener de Rankings con Botón Reset Reparado
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         rList.innerHTML = "<h3>🏆 Ranking Global</h3>";
@@ -134,7 +138,7 @@ async function initRealtime() {
             btnReset.className = "btn-main btn-reset-admin";
             btnReset.innerText = "♻️ Resetear Rankings";
             btnReset.onclick = async () => {
-                if(confirm("¿Borrar todos los puntos del ranking?")){
+                if(confirm("¿Borrar todos los puntos?")){
                     const batch = writeBatch(window.db);
                     const snaps = await getDocs(collection(window.db, "scores"));
                     snaps.forEach(d => batch.delete(d.ref));
@@ -189,17 +193,26 @@ async function handleAnswer(isCorrect) {
     }
 }
 
-// --- EDITOR CON LÍMITES 5-10 ---
+// --- EDITOR CON LÍMITES 4-6 RESPUESTAS ---
 function nextQuestion() {
-    if (tempQuestions.length >= 10) return alert("Máximo 10 preguntas alcanzado.");
+    if (tempQuestions.length >= 10) return alert("Máximo 10 preguntas.");
+    
     const text = document.getElementById('q-text').value.trim();
     const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
-    if(!text || opts.some(o => !o)) return alert("Completa la pregunta y opciones.");
+    
+    // PUNTO 2: Validar 4 a 6 respuestas
+    if(!text) return alert("Escribe la pregunta.");
+    if(opts.length < 4) return alert("Debes añadir al menos 4 respuestas.");
+    if(opts.some(o => !o)) return alert("No dejes respuestas vacías.");
     
     tempQuestions.push({ text, opts });
+    
+    // Reset para nueva pregunta con 4 espacios por defecto
     document.getElementById('q-text').value = "";
     document.getElementById('options-setup').innerHTML = `
         <input type="text" class="opt-input" placeholder="Opción Correcta">
+        <input type="text" class="opt-input" placeholder="Opción Incorrecta">
+        <input type="text" class="opt-input" placeholder="Opción Incorrecta">
         <input type="text" class="opt-input" placeholder="Opción Incorrecta">
     `;
     document.getElementById('q-number-display').innerText = `Pregunta #${tempQuestions.length + 1}`;
@@ -238,10 +251,21 @@ document.addEventListener('DOMContentLoaded', () => {
         tempQuestions = [];
         document.getElementById('questions-added-count').innerText = "Preguntas añadidas: 0";
         document.getElementById('q-number-display').innerText = "Pregunta #1";
+        // Reset editor con 4 inputs
+        document.getElementById('options-setup').innerHTML = `
+            <input type="text" class="opt-input" placeholder="Opción Correcta">
+            <input type="text" class="opt-input" placeholder="Opción Incorrecta">
+            <input type="text" class="opt-input" placeholder="Opción Incorrecta">
+            <input type="text" class="opt-input" placeholder="Opción Incorrecta">
+        `;
         showScreen('editor-screen');
     };
 
+    // PUNTO 2: Limitar máximo 6 opciones
     document.getElementById('btn-add-option').onclick = () => {
+        const inputs = document.querySelectorAll('.opt-input');
+        if (inputs.length >= 6) return alert("Máximo 6 opciones permitidas.");
+        
         const inp = document.createElement('input');
         inp.className = "opt-input"; inp.placeholder = "Otra incorrecta";
         document.getElementById('options-setup').appendChild(inp);
@@ -254,17 +278,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const curQText = document.getElementById('q-text').value.trim();
         const curOpts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
 
-        // Punto 7: Auto-guardar la pregunta actual si está completa
-        if (curQText !== "" && !curOpts.some(o => o === "")) {
+        // Punto 7 & 2: Auto-guardar solo si cumple con las 4 opciones
+        if (curQText !== "" && curOpts.length >= 4 && !curOpts.some(o => o === "")) {
             if (tempQuestions.length < 10) {
                 tempQuestions.push({ text: curQText, opts: curOpts });
             }
         }
 
-        // Punto 1: Validar límites
         if (!title) return alert("Falta el título.");
         if (tempQuestions.length < 5) return alert(`Mínimo 5 preguntas (llevas ${tempQuestions.length})`);
-        if (tempQuestions.length > 10) return alert("Máximo 10 preguntas.");
         
         await addDoc(collection(window.db, "quizzes"), {
             title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp()
