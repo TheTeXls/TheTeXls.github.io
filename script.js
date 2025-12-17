@@ -17,10 +17,38 @@ function showScreen(id) {
     document.getElementById(id).classList.remove('hidden');
 }
 
+// --- PUNTO 3: FUNCIÓN DE AUTO-LIMPIEZA (5 HORAS) ---
+async function cleanupOldQuizzes() {
+    const now = Date.now();
+    const fiveHoursInMs = 5 * 60 * 60 * 1000;
+    
+    const querySnap = await getDocs(collection(window.db, "quizzes"));
+    const batch = writeBatch(window.db);
+    let count = 0;
+
+    querySnap.forEach((d) => {
+        const data = d.data();
+        if (data.createdAt) {
+            // Convertimos el timestamp de Firebase a milisegundos de JS
+            const createdAtMs = data.createdAt.toMillis();
+            if (now - createdAtMs > fiveHoursInMs) {
+                batch.delete(d.ref);
+                count++;
+            }
+        }
+    });
+
+    if (count > 0) {
+        await batch.commit();
+        console.log(`🧹 Limpieza: Se eliminaron ${count} quizzes caducados.`);
+    }
+}
+
 window.showHome = function() {
     if (!currentUser) return showScreen('login-screen');
     showScreen('home-screen');
     document.getElementById('user-display').innerText = `👤 ${displayName}`;
+    cleanupOldQuizzes(); // Ejecutar limpieza al entrar
     initRealtime();
 };
 
@@ -60,7 +88,6 @@ async function initRealtime() {
         playedQuizIds = scoreSnap.docs.map(d => d.data().quizId);
     }
 
-    // PUNTO 5: Listener de Quizzes con mensaje de "Vacío"
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
         list.innerHTML = "<h3>Quizzes Disponibles</h3>";
@@ -193,21 +220,14 @@ async function handleAnswer(isCorrect) {
     }
 }
 
-// --- EDITOR CON LÍMITES 4-6 RESPUESTAS ---
+// --- EDITOR ---
 function nextQuestion() {
     if (tempQuestions.length >= 10) return alert("Máximo 10 preguntas.");
-    
     const text = document.getElementById('q-text').value.trim();
     const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
-    
-    // PUNTO 2: Validar 4 a 6 respuestas
-    if(!text) return alert("Escribe la pregunta.");
-    if(opts.length < 4) return alert("Debes añadir al menos 4 respuestas.");
-    if(opts.some(o => !o)) return alert("No dejes respuestas vacías.");
+    if(!text || opts.length < 4 || opts.some(o => !o)) return alert("Pregunta incompleta (mínimo 4 opciones).");
     
     tempQuestions.push({ text, opts });
-    
-    // Reset para nueva pregunta con 4 espacios por defecto
     document.getElementById('q-text').value = "";
     document.getElementById('options-setup').innerHTML = `
         <input type="text" class="opt-input" placeholder="Opción Correcta">
@@ -251,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tempQuestions = [];
         document.getElementById('questions-added-count').innerText = "Preguntas añadidas: 0";
         document.getElementById('q-number-display').innerText = "Pregunta #1";
-        // Reset editor con 4 inputs
         document.getElementById('options-setup').innerHTML = `
             <input type="text" class="opt-input" placeholder="Opción Correcta">
             <input type="text" class="opt-input" placeholder="Opción Incorrecta">
@@ -261,11 +280,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen('editor-screen');
     };
 
-    // PUNTO 2: Limitar máximo 6 opciones
     document.getElementById('btn-add-option').onclick = () => {
         const inputs = document.querySelectorAll('.opt-input');
-        if (inputs.length >= 6) return alert("Máximo 6 opciones permitidas.");
-        
+        if (inputs.length >= 6) return alert("Máximo 6 opciones.");
         const inp = document.createElement('input');
         inp.className = "opt-input"; inp.placeholder = "Otra incorrecta";
         document.getElementById('options-setup').appendChild(inp);
@@ -278,20 +295,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const curQText = document.getElementById('q-text').value.trim();
         const curOpts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
 
-        // Punto 7 & 2: Auto-guardar solo si cumple con las 4 opciones
         if (curQText !== "" && curOpts.length >= 4 && !curOpts.some(o => o === "")) {
-            if (tempQuestions.length < 10) {
-                tempQuestions.push({ text: curQText, opts: curOpts });
-            }
+            if (tempQuestions.length < 10) tempQuestions.push({ text: curQText, opts: curOpts });
         }
 
-        if (!title) return alert("Falta el título.");
-        if (tempQuestions.length < 5) return alert(`Mínimo 5 preguntas (llevas ${tempQuestions.length})`);
+        if (!title) return alert("Falta título.");
+        if (tempQuestions.length < 5) return alert(`Mínimo 5 preguntas.`);
         
         await addDoc(collection(window.db, "quizzes"), {
             title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp()
         });
-        alert("¡Publicado!");
+        alert("¡Publicado! Se eliminará automáticamente en 5 horas.");
         window.showHome();
     };
 
