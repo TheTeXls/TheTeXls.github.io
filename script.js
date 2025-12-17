@@ -15,7 +15,8 @@ function showScreen(id) {
 window.showHome = function() {
     if (!currentUser) return showScreen('login-screen');
     showScreen('home-screen');
-    document.getElementById('user-display').innerText = `👤 ${displayName || currentUser}`;
+    // Usamos el displayName (el nombre con mayúsculas/minúsculas original)
+    document.getElementById('user-display').innerText = `👤 ${displayName}`;
     initRealtime();
 }
 
@@ -32,11 +33,18 @@ async function handleLogin() {
     } else {
         const userRef = doc(window.db, "users", lowerName);
         const snap = await getDoc(userRef);
+        
         if (snap.exists()) {
             if (snap.data().pass !== pass) return alert("Password incorrecto");
+            // Recuperamos el nombre original guardado en la DB
             displayName = snap.data().originalName || rawName;
         } else {
-            await setDoc(userRef, { originalName: rawName, pass: pass, createdAt: serverTimestamp() });
+            // Guardamos por primera vez el ID en minúsculas y el nombre como se escribió
+            await setDoc(userRef, { 
+                originalName: rawName, 
+                pass: pass, 
+                createdAt: serverTimestamp() 
+            });
             displayName = rawName;
         }
         currentUser = lowerName;
@@ -48,6 +56,13 @@ async function handleLogin() {
 }
 
 async function initRealtime() {
+    // Primero obtenemos un mapa de todos los nombres originales para el ranking
+    const usersSnap = await getDocs(collection(window.db, "users"));
+    let nameMap = { "admin": "Admin Maestro" };
+    usersSnap.forEach(u => {
+        nameMap[u.id] = u.data().originalName;
+    });
+
     let playedQuizIds = [];
     if (currentUser !== ADMIN_ID) {
         const qScores = query(collection(window.db, "scores"), where("user", "==", currentUser));
@@ -55,6 +70,7 @@ async function initRealtime() {
         playedQuizIds = scoreSnap.docs.map(d => d.data().quizId);
     }
 
+    // QUIZZES
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
         list.innerHTML = "<h3>Quizzes Disponibles</h3>";
@@ -65,6 +81,7 @@ async function initRealtime() {
             
             const div = document.createElement('div');
             div.className = 'quiz-card';
+            // Mostramos el autor tal cual se guardó
             div.innerHTML = `<b>${q.title}</b><br><small>Por: ${q.author}</small>`;
             
             const btnJugar = document.createElement('button');
@@ -92,6 +109,7 @@ async function initRealtime() {
         });
     });
 
+    // RANKING (Usa el mapa de nombres para mostrar el originalName)
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         rList.innerHTML = "<h3>🏆 Ranking Global</h3>";
@@ -103,9 +121,13 @@ async function initRealtime() {
                 totals[u] = (totals[u] || 0) + (s.points || 0);
             }
         });
+        
         Object.entries(totals).sort((a,b) => b[1]-a[1]).forEach(([u, p]) => {
-            rList.innerHTML += `<div class="ranking-item"><span>${u}</span><b>${p} pts</b></div>`;
+            // Buscamos el nombre bonito en el mapa, si no existe usamos el ID
+            const nameToShow = nameMap[u] || u;
+            rList.innerHTML += `<div class="ranking-item"><span>${nameToShow}</span><b>${p} pts</b></div>`;
         });
+
         if (currentUser === ADMIN_ID) {
             const btnReset = document.createElement('button');
             btnReset.innerText = "⚠️ Restaurar Ranking";
@@ -117,7 +139,7 @@ async function initRealtime() {
 }
 
 async function resetRanking() {
-    if (!confirm("¿Seguro que quieres borrar todos los puntos?")) return;
+    if (!confirm("¿Borrar todos los puntos?")) return;
     try {
         const scoresSnap = await getDocs(collection(window.db, "scores"));
         const batch = writeBatch(window.db);
@@ -165,10 +187,17 @@ function openSettings(quiz) {
         table.innerHTML = "Cargando...";
         const qQuery = query(collection(window.db, "scores"), where("quizId", "==", quiz.id));
         const snap = await getDocs(qQuery);
+        
+        // Aquí también usamos un mapa rápido para los nombres de las respuestas
+        const usersSnap = await getDocs(collection(window.db, "users"));
+        let localMap = { "admin": "Admin Maestro" };
+        usersSnap.forEach(u => localMap[u.id] = u.data().originalName);
+
         table.innerHTML = snap.empty ? "Sin respuestas." : "";
         snap.forEach(d => {
             const r = d.data();
-            table.innerHTML += `<div class="ranking-item"><span>${r.user}</span><b>${r.acerto ? "✅" : "❌"}</b></div>`;
+            const n = localMap[r.user.toLowerCase()] || r.user;
+            table.innerHTML += `<div class="ranking-item"><span>${n}</span><b>${r.acerto ? "✅" : "❌"}</b></div>`;
         });
     };
 }
@@ -178,8 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-logout').onclick = () => { localStorage.clear(); window.location.reload(); };
     document.getElementById('btn-go-editor').onclick = () => showScreen('editor-screen');
     document.getElementById('btn-back-home').onclick = () => window.showHome();
-    
-    // CORRECCIÓN: Eventos de los botones de Volver en ajustes y respuestas
     document.getElementById('btn-settings-back').onclick = () => window.showHome();
     document.getElementById('btn-responses-back').onclick = () => showScreen('settings-screen');
 
@@ -188,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const qText = document.getElementById('q-text').value;
         const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value);
         if(!title || !qText || opts.length < 2) return alert("Faltan datos");
+        // Al guardar el quiz, usamos el displayName (el nombre bonito)
         await addDoc(collection(window.db, "quizzes"), { title, q: qText, opts, author: displayName });
         window.showHome();
     };
