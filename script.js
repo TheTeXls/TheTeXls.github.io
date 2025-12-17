@@ -3,12 +3,12 @@ import {
     deleteDoc, serverTimestamp, query, where, getDocs, writeBatch 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// --- DATOS DE ADMIN (Recuperados de tus instrucciones) ---
 const ADMIN_ID = "admin";
 const ADMIN_PASS = "gem";
 
 let currentUser = localStorage.getItem('quizUser') || null;
 let displayName = localStorage.getItem('quizDisplayName') || null;
-
 let tempQuestions = [];
 let activeQuiz = null;
 let currentQIdx = 0;
@@ -22,43 +22,39 @@ function showScreen(id) {
     if(target) target.classList.remove('hidden');
 }
 
-// --- LIMPIEZA AUTOMÁTICA ---
+// --- LIMPIEZA AUTOMÁTICA (5 HORAS) ---
 async function cleanupOldQuizzes() {
     const now = Date.now();
-    const fiveHoursInMs = 5 * 60 * 60 * 1000;
+    const fiveHours = 5 * 60 * 60 * 1000;
     try {
-        const querySnap = await getDocs(collection(window.db, "quizzes"));
+        const snap = await getDocs(collection(window.db, "quizzes"));
         const batch = writeBatch(window.db);
         let count = 0;
-        querySnap.forEach((d) => {
+        snap.forEach(d => {
             const data = d.data();
-            if (data.createdAt && data.createdAt.toMillis) {
-                if (now - data.createdAt.toMillis() > fiveHoursInMs) {
-                    batch.delete(d.ref);
-                    count++;
-                }
+            if (data.createdAt?.toMillis && (now - data.createdAt.toMillis() > fiveHours)) {
+                batch.delete(d.ref); count++;
             }
         });
         if (count > 0) await batch.commit();
-    } catch (e) { console.error("Error limpieza:", e); }
+    } catch (e) {}
 }
 
 window.showHome = function() {
     if (!currentUser) return showScreen('login-screen');
     showScreen('home-screen');
-    const display = document.getElementById('user-display');
-    if(display) display.innerText = `👤 ${displayName}`;
+    
+    // Usando tu clase .header-user
+    const userDisplay = document.getElementById('user-display');
+    if(userDisplay) userDisplay.innerText = displayName;
+    
     cleanupOldQuizzes();
     initRealtime();
 };
 
 async function handleLogin() {
-    const nameInput = document.getElementById('user-name-input');
-    const passInput = document.getElementById('user-pass-input');
-    if(!nameInput || !passInput) return;
-
-    const rawName = nameInput.value.trim();
-    const pass = passInput.value.trim();
+    const rawName = document.getElementById('user-name-input').value.trim();
+    const pass = document.getElementById('user-pass-input').value.trim();
     if (!rawName || !pass) return alert("Rellena los campos");
     
     const lowerName = rawName.toLowerCase();
@@ -82,27 +78,22 @@ async function handleLogin() {
 }
 
 async function initRealtime() {
-    // 1. Nombres de usuarios
     const nameMap = { "admin": "Admin Maestro" };
     try {
         const uSnap = await getDocs(collection(window.db, "users"));
         uSnap.forEach(u => { nameMap[u.id] = u.data().originalName; });
     } catch(e){}
 
-    // 2. Quizzes jugados (Validación de existencia)
     let playedQuizIds = [];
-    if (currentUser && currentUser !== ADMIN_ID) {
-        try {
-            const qScores = query(collection(window.db, "scores"), where("user", "==", currentUser));
-            const scoreSnap = await getDocs(qScores);
-            playedQuizIds = scoreSnap.docs.map(d => d.data().quizId);
-        } catch(e){}
+    if (currentUser !== ADMIN_ID) {
+        const qScores = query(collection(window.db, "scores"), where("user", "==", currentUser));
+        const scoreSnap = await getDocs(qScores);
+        playedQuizIds = scoreSnap.docs.map(d => d.data().quizId);
     }
 
-    // 3. Listener de Quizzes con ESCUDO DE SEGURIDAD (Línea 76 corregida)
+    // LISTA DE QUIZZES (Tu diseño original)
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
-        if(!list) return;
         list.innerHTML = "<h3>Quizzes Disponibles</h3>";
         
         if (snap.empty) {
@@ -112,58 +103,50 @@ async function initRealtime() {
 
         snap.forEach(d => {
             const q = d.data();
-            const qId = d.id;
-            // ESCUDO: Si no hay preguntas, ponemos 0 en lugar de romper el código
-            const totalQ = (q.questions && Array.isArray(q.questions)) ? q.questions.length : 0;
-            
-            const isPlayed = playedQuizIds.includes(qId);
+            const totalQ = q.questions?.length || 0;
+            const isPlayed = playedQuizIds.includes(d.id);
             const isAdmin = (currentUser === ADMIN_ID);
-            const isAuthor = (q.author && q.author.toLowerCase() === currentUser);
+            const isAuthor = (q.author?.toLowerCase() === currentUser);
             
             const div = document.createElement('div');
-            div.className = 'quiz-card';
-            div.innerHTML = `<b>${q.title || 'Sin título'}</b><br><small>${totalQ} preguntas • Por: ${q.author || 'Anon'}</small>`;
+            div.className = 'quiz-card'; // Tu clase con borde morado lateral
+            div.innerHTML = `<b>${q.title}</b><br><small>${totalQ} preguntas • Por: ${q.author}</small>`;
             
             const btn = document.createElement('button');
-            btn.className = "btn-main";
+            btn.className = "btn-main"; // Tu botón morado/verde
             
             if (isAdmin) {
                 btn.innerText = "Probar (Admin) 🎮";
-                btn.onclick = () => startQuizSession({id: qId, ...q});
+                btn.onclick = () => startQuizSession({id: d.id, ...q});
             } else if (isAuthor) {
-                btn.innerText = "Tu Quiz 🚫"; btn.disabled = true; btn.style.background = "#b2bec3";
+                btn.innerText = "Tu Quiz 🚫"; btn.disabled = true; btn.style.background = "#ccc";
             } else if (isPlayed) {
-                btn.innerText = "Completado ✅"; btn.disabled = true; btn.style.background = "#b2bec3";
-            } else if (totalQ === 0) {
-                btn.innerText = "Incompleto ⚠️"; btn.disabled = true;
+                btn.innerText = "Completado ✅"; btn.disabled = true; btn.style.background = "#ccc";
             } else {
                 btn.innerText = "Jugar 🎮";
-                btn.onclick = () => startQuizSession({id: qId, ...q});
+                btn.onclick = () => startQuizSession({id: d.id, ...q});
             }
             div.appendChild(btn);
 
             if (isAdmin || isAuthor) {
                 const bSet = document.createElement('button');
-                bSet.className = "btn-small"; bSet.style.marginTop = "8px"; bSet.innerText = "⚙️ Ajustes";
-                bSet.onclick = () => openSettings({id: qId, ...q});
+                bSet.className = "btn-small"; // Tu botón gris pequeño
+                bSet.style.marginTop = "10px"; bSet.innerText = "⚙️ Ajustes";
+                bSet.onclick = () => openSettings({id: d.id, ...q});
                 div.appendChild(bSet);
             }
             list.appendChild(div);
         });
     });
 
-    // 4. Ranking
+    // RANKING (Tu diseño original)
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
-        if(!rList) return;
         rList.innerHTML = ""; 
         let totals = {};
         snap.forEach(d => {
             const s = d.data();
-            if(s.user) {
-                const u = s.user.toLowerCase();
-                totals[u] = (totals[u] || 0) + (s.points || 0);
-            }
+            if(s.user) totals[s.user] = (totals[s.user] || 0) + (s.points || 0);
         });
 
         Object.entries(totals).sort((a,b) => b[1]-a[1]).forEach(([u, p]) => {
@@ -172,7 +155,8 @@ async function initRealtime() {
 
         if (currentUser === ADMIN_ID) {
             const bRes = document.createElement('button');
-            bRes.className = "btn-main btn-reset-admin"; bRes.innerText = "♻️ Reset Rankings";
+            bRes.className = "btn-reset-admin"; // Tu botón rojo pequeño
+            bRes.innerText = "♻️ Reset Rankings";
             bRes.onclick = async () => {
                 if(confirm("¿Borrar todo?")){
                     const b = writeBatch(window.db);
@@ -186,36 +170,28 @@ async function initRealtime() {
     });
 }
 
-// --- JUEGO ---
+// --- SESIÓN DE JUEGO ---
 function startQuizSession(quiz) {
-    if(!quiz.questions || quiz.questions.length === 0) return alert("Error: Quiz sin preguntas.");
-    activeQuiz = quiz;
-    currentQIdx = 0;
-    sessionScore = 0;
-    sessionDetails = [];
+    activeQuiz = quiz; currentQIdx = 0; sessionScore = 0; sessionDetails = [];
     showScreen('quiz-screen');
     renderQuestion();
 }
 
 function renderQuestion() {
     const qData = activeQuiz.questions[currentQIdx];
-    const titleEl = document.getElementById('current-quiz-title');
-    if(titleEl) titleEl.innerText = `${activeQuiz.title} (${currentQIdx + 1}/${activeQuiz.questions.length})`;
-    
+    document.getElementById('current-quiz-title').innerText = `${activeQuiz.title}`;
     const cont = document.getElementById('options-container');
-    if(!cont) return;
-    cont.innerHTML = `<p style="font-size:18px; margin-bottom:20px; font-weight:bold;">${qData.text}</p>`;
+    cont.innerHTML = `<p style="font-weight:bold; margin-bottom:15px;">${qData.text}</p>`;
     
-    const shuffled = [...qData.opts].sort(() => Math.random() - 0.5);
-    shuffled.forEach(opt => {
+    [...qData.opts].sort(() => Math.random() - 0.5).forEach(opt => {
         const btn = document.createElement('button');
-        btn.className = "btn-main";
+        btn.className = "btn-main"; // Reutiliza tu diseño de botón
         btn.style.background = "white"; btn.style.color = "#6c5ce7"; btn.style.border = "2px solid #6c5ce7";
         btn.innerText = opt;
         btn.onclick = () => {
             const ok = (opt === qData.opts[0]);
             sessionDetails.push({ pregunta: qData.text, respuesta: opt, correcta: ok });
-            if (ok) { sessionScore++; alert("✅ Correcto"); } else { alert("❌ Incorrecto"); }
+            if (ok) { sessionScore++; alert("✅ ¡Correcto!"); } else { alert("❌ Incorrecto"); }
             currentQIdx++;
             if (currentQIdx < activeQuiz.questions.length) renderQuestion();
             else finishGame();
@@ -225,7 +201,7 @@ function renderQuestion() {
 }
 
 async function finishGame() {
-    alert(`Fin. Puntos: ${sessionScore}`);
+    alert(`Fin. Puntos: ${sessionScore}/${activeQuiz.questions.length}`);
     if (currentUser !== ADMIN_ID) {
         await addDoc(collection(window.db, "scores"), {
             user: currentUser, points: sessionScore, totalQuestions: activeQuiz.questions.length,
@@ -235,9 +211,9 @@ async function finishGame() {
     window.showHome();
 }
 
-// --- EDITOR Y AJUSTES ---
+// --- AJUSTES Y HISTORIAL (PUNTO 6) ---
 function openSettings(quiz) {
-    document.getElementById('settings-quiz-title').innerText = `Ajustes: ${quiz.title}`;
+    document.getElementById('settings-quiz-title').innerText = quiz.title;
     showScreen('settings-screen');
     document.getElementById('btn-delete-quiz').onclick = async () => {
         if(confirm("¿Borrar?")) { await deleteDoc(doc(window.db, "quizzes", quiz.id)); window.showHome(); }
@@ -248,55 +224,53 @@ function openSettings(quiz) {
         table.innerHTML = "Cargando...";
         const qQ = query(collection(window.db, "scores"), where("quizId", "==", quiz.id));
         const sn = await getDocs(qQ);
-        table.innerHTML = sn.empty ? "Sin datos" : "";
+        table.innerHTML = sn.empty ? "Nadie ha jugado aún." : "";
         sn.forEach(d => {
             const r = d.data();
             const div = document.createElement('div');
-            div.className = "quiz-card"; div.style.textAlign = "left";
+            div.className = "quiz-card";
             let detH = "";
             if(r.details) r.details.forEach((dt, i) => {
-                detH += `<small>${i+1}. ${dt.pregunta}<br><span style="color:${dt.correcta?'green':'red'}">${dt.correcta?'✅':'❌'} ${dt.respuesta}</span></small><br>`;
+                detH += `<div style="font-size:11px; margin-top:5px;">${i+1}. ${dt.pregunta}<br><b style="color:${dt.correcta?'#00b894':'#ff7675'}">${dt.respuesta}</b></div>`;
             });
-            div.innerHTML = `<b>👤 ${r.user}</b> - ${r.points} pts<hr>${detH}`;
+            div.innerHTML = `<b>👤 ${r.user}</b>: ${r.points} pts<hr>${detH}`;
             table.appendChild(div);
         });
     };
 }
 
+// --- EVENTOS DE BOTONES ---
 document.addEventListener('DOMContentLoaded', () => {
-    const bLogin = document.getElementById('btn-login-action');
-    if(bLogin) bLogin.onclick = handleLogin;
+    document.getElementById('btn-login-action').onclick = handleLogin;
+    document.getElementById('btn-logout').onclick = () => { localStorage.clear(); window.location.reload(); };
     
-    const bLogout = document.getElementById('btn-logout');
-    if(bLogout) bLogout.onclick = () => { localStorage.clear(); window.location.reload(); };
-    
-    const bGoEd = document.getElementById('btn-go-editor');
-    if(bGoEd) bGoEd.onclick = () => {
+    document.getElementById('btn-go-editor').onclick = () => {
         tempQuestions = [];
         document.getElementById('q-number-display').innerText = "Pregunta #1";
-        document.getElementById('options-setup').innerHTML = `
-            <input type="text" class="opt-input" placeholder="Opción Correcta">
-            <input type="text" class="opt-input" placeholder="Opción Incorrecta">
-            <input type="text" class="opt-input" placeholder="Opción Incorrecta">
-            <input type="text" class="opt-input" placeholder="Opción Incorrecta">
-        `;
         showScreen('editor-screen');
     };
 
-    const bNext = document.getElementById('btn-next-q');
-    if(bNext) bNext.onclick = () => {
+    document.getElementById('btn-next-q').onclick = () => {
         const text = document.getElementById('q-text').value.trim();
         const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
-        if(!text || opts.some(o => !o)) return alert("Incompleto");
+        if(!text || opts.some(o => !o)) return alert("Rellena todo");
+        if(tempQuestions.length >= 10) return alert("Máximo 10");
         tempQuestions.push({ text, opts });
         document.getElementById('q-text').value = "";
         document.getElementById('q-number-display').innerText = `Pregunta #${tempQuestions.length + 1}`;
+        document.getElementById('questions-added-count').innerText = `Preparadas: ${tempQuestions.length}`;
     };
 
-    const bSave = document.getElementById('btn-save-quiz');
-    if(bSave) bSave.onclick = async () => {
+    document.getElementById('btn-save-quiz').onclick = async () => {
         const title = document.getElementById('quiz-title-input').value.trim();
-        if(!title || tempQuestions.length < 5) return alert("Título o mínimo 5 preguntas.");
+        // Punto 7: Guardar la última si no se le dio a "Siguiente"
+        const curText = document.getElementById('q-text').value.trim();
+        const curOpts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
+        if(curText && !curOpts.some(o => !o) && tempQuestions.length < 10) {
+            tempQuestions.push({ text: curText, opts: curOpts });
+        }
+
+        if(!title || tempQuestions.length < 5) return alert("Pon título y mínimo 5 preguntas.");
         await addDoc(collection(window.db, "quizzes"), { title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp() });
         window.showHome();
     };
