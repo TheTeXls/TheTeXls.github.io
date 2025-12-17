@@ -1,3 +1,4 @@
+/* --- TUS ESTILOS ORIGINALES --- */
 body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
 .container { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
 .hidden { display: none !important; }
@@ -8,3 +9,22 @@ input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; borde
 .ranking-item { display: flex; justify-content: space-between; padding: 10px; background: #f9f9f9; margin-bottom: 5px; border-radius: 6px; font-size: 14px; }
 .header-user { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: bold; }
 .btn-reset-admin { background: #ff7675 !important; color: white; width: 100%; margin-top: 15px; font-size: 10px; text-transform: uppercase; }
+
+/* --- AGREGADOS PARA EL EDITOR MULTI-PREGUNTA (v1.9) --- */
+#question-editor { 
+    border: 2px dashed #6c5ce7; 
+    padding: 15px; 
+    border-radius: 10px; 
+    background: #fafafa; 
+    margin: 15px 0; 
+}
+hr { 
+    border: 0; 
+    height: 1px; 
+    background: #eee; 
+    margin: 20px 0; 
+}
+#q-number-display { 
+    color: #6c5ce7; 
+    margin: 0 0 10px 0; 
+}
