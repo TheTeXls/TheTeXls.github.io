@@ -1,145 +1,46 @@
-/* --- COMPONENTE 1: RESET Y BASE --- */
-body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    background: #f0f2f5; 
-    display: flex; 
-    justify-content: center; 
-    padding: 20px; 
-    margin: 0; 
-    min-height: 100vh; 
-}
-
-.container { 
-    background: white; 
-    padding: 25px; 
-    border-radius: 15px; 
-    width: 100%; 
-    max-width: 450px; 
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
-    text-align: center; 
-    height: fit-content; 
-}
-
+/* BASE */
+body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh; }
+.container { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); text-align: center; height: fit-content; }
 .hidden { display: none !important; }
 
-/* --- COMPONENTE 2: LAYOUT DASHBOARD (PC) --- */
+/* LAYOUT PC */
 @media (min-width: 850px) {
-    #home-screen.container { max-width: 1000px; }
-    .main-layout { display: flex; gap: 30px; text-align: left; }
-    .quizzes-column { flex: 1.8; }
-    .ranking-column { 
-        flex: 1; 
-        background: #fafafa; 
-        padding: 20px; 
-        border-radius: 12px; 
-        border: 1px solid #eee; 
-        position: relative; 
-        min-height: 400px; 
-        display: flex; 
-        flex-direction: column; 
-    }
+    #home-screen.container { max-width: 950px; }
+    .main-layout { display: flex; gap: 25px; text-align: left; }
+    .quizzes-column { flex: 1.6; }
+    .ranking-column { flex: 1; background: #fafafa; padding: 20px; border-radius: 12px; border: 1px solid #eee; position: relative; min-height: 400px; display: flex; flex-direction: column; }
 }
 
-/* --- COMPONENTE 3: TARJETAS DE QUIZ (Punto #1 imagen) --- */
-.quiz-card { 
-    position: relative; 
-    border: 1px solid #eee; 
-    padding: 20px; 
-    margin: 15px 0; 
-    border-radius: 12px; 
-    background: #fff; 
-    border-left: 6px solid #6c5ce7; 
-    transition: transform 0.2s, box-shadow 0.2s; 
-}
+/* TARJETAS Y BOTÓN AJUSTES (PUNTO 1) */
+.quiz-card { position: relative; border: 1px solid #eee; padding: 20px; margin: 15px 0; border-radius: 12px; background: #fff; border-left: 6px solid #6c5ce7; }
+.btn-settings-corner { position: absolute; top: 10px; right: 10px; background: #f1f2f6; border: 1px solid #ddd; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
 
-.quiz-card:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
-}
+/* RANKING Y RESET (PUNTO 2) */
+.ranking-item { display: flex; justify-content: space-between; padding: 12px; background: #fff; border: 1px solid #eee; margin-bottom: 8px; border-radius: 8px; }
+.ranking-admin-footer { margin-top: auto; text-align: right; padding-top: 15px; }
+.btn-reset-admin { background: #ff7675; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
 
-.btn-settings-corner { 
-    position: absolute; 
-    top: 12px; 
-    right: 12px; 
-    background: #f1f2f6; 
-    border: 1px solid #ddd; 
-    padding: 6px 10px; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    font-size: 13px; 
-    font-weight: bold; 
-    color: #555;
-}
+/* EDITOR */
+.editor-box { border: 2px solid #6c5ce7; padding: 20px; border-radius: 12px; background: #fff; margin: 15px 0; }
+#q-text { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; height: 70px; margin-bottom: 10px; resize: none; box-sizing: border-box; }
+.opt-input { margin-bottom: 8px; border-left: 4px solid #ddd; padding-left: 10px; }
+.opt-input:first-child { border-left-color: #00b894; background: #f0fff4; }
+.label-correct { display: block; text-align: left; font-size: 11px; font-weight: bold; color: #00b894; margin-bottom: 5px; }
+.editor-actions { display: flex; gap: 10px; }
+#editor-preview-container { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; border: 1px dashed #ccc; text-align: left; }
+.preview-item { border-bottom: 1px solid #eee; padding: 5px 0; font-size: 13px; }
 
-.btn-settings-corner:hover { background: #e2e4e9; }
-
-/* --- COMPONENTE 4: BOTONES Y ACCIONES --- */
-.btn-main { 
-    width: 100%; 
-    padding: 15px; 
-    border: none; 
-    border-radius: 10px; 
-    cursor: pointer; 
-    font-weight: bold; 
-    font-size: 16px; 
-    transition: filter 0.2s; 
-}
-
-.btn-main:active { filter: brightness(0.9); }
+/* BOTONES */
+.btn-main { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
 .btn-purple { background: #6c5ce7; color: white; }
 .btn-green { background: #27ae60; color: white; }
 .btn-blue { background: #0984e3; color: white; }
 .btn-red { background: #d63031; color: white; }
 .btn-create { background: #00b894; color: white; margin-bottom: 20px; }
+.btn-small { background: #eee; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
 
-.btn-small { 
-    background: #eee; 
-    border: none; 
-    padding: 10px 15px; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    font-size: 13px; 
-    font-weight: bold; 
-}
-
-/* --- COMPONENTE 5: RANKING Y ADMIN (Punto #2 imagen) --- */
-.ranking-item { 
-    display: flex; 
-    justify-content: space-between; 
-    padding: 12px; 
-    background: #fff; 
-    border: 1px solid #eee; 
-    margin-bottom: 8px; 
-    border-radius: 8px; 
-}
-
-.ranking-admin-footer { 
-    margin-top: auto; 
-    text-align: right; 
-    padding-top: 20px; 
-}
-
-.btn-reset-admin { 
-    background: #ff7675; 
-    color: white; 
-    border: none; 
-    padding: 10px 15px; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    font-size: 12px; 
-    font-weight: bold; 
-}
-
-/* --- COMPONENTE 6: ANIMACIONES --- */
-.loading-text { 
-    color: #6c5ce7; 
-    font-weight: bold; 
-    animation: pulse 1.5s infinite; 
-    margin: 20px 0;
-}
-
-@keyframes pulse { 
-    0% { opacity: 0.4; } 
-    50% { opacity: 1; } 
-    100% { opacity: 0.4; } 
-}
+/* ANIMACIÓN CARGANDO */
+.loading-text { color: #6c5ce7; font-weight: bold; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+.section-divider { display: flex; align-items: center; text-align: center; margin-bottom: 20px; color: #a29bfe; font-weight: bold; }
+.section-divider::before, .section-divider::after { content: ''; flex: 1; border-bottom: 2px solid #dfe6e9; }
