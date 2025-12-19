@@ -37,6 +37,10 @@
                     <span>🏆 TOP RANKING</span>
                 </div>
                 <div id="global-ranking-list"></div>
+                
+                <div id="admin-controls" class="hidden" style="text-align: right; margin-top: 15px;">
+                    <button id="btn-reset-ranking" class="btn-reset-admin">♻️ Resetear Rankings</button>
+                </div>
             </aside>
         </div>
     </div>
@@ -56,7 +60,8 @@
             <h3 id="q-number-display">Pregunta #1</h3>
             <textarea id="q-text" placeholder="Escribe tu pregunta aquí..."></textarea>
             
-            <div id="options-setup"></div>
+            <div id="options-setup">
+                </div>
             
             <button id="btn-add-option" class="btn-small" style="background: #0984e3; margin-bottom: 10px;">
                 ➕ Añadir opción (Máx 6)
@@ -87,6 +92,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // CONFIGURACIÓN DE TU FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSy...", // REEMPLAZA CON TU KEY REAL
             authDomain: "quizzesgem.firebaseapp.com",
