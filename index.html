@@ -3,32 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quizzes GEM</title>
+    <title>Quizzes GEM - Versión 1.0</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="login-screen" class="container">
         <h1>🎮 Quizzes GEM</h1>
-        <p>Ingresa para jugar o crear quizzes</p>
-        <input type="text" id="user-name-input" placeholder="Nombre de usuario">
-        <input type="password" id="user-pass-input" placeholder="Contraseña">
-        <button id="btn-login-action" class="btn-main">Entrar / Registrarse</button>
+        <p>Ingresa para jugar o crear contenido</p>
+        <div class="login-box">
+            <input type="text" id="user-name-input" placeholder="Nombre de usuario">
+            <input type="password" id="user-pass-input" placeholder="Contraseña">
+            <button id="btn-login-action" class="btn-main">Entrar / Registrarse</button>
+        </div>
     </div>
 
     <div id="home-screen" class="container hidden">
-        <div class="header-user">
-            <span id="user-display">👤 Usuario</span>
+        <header class="header-user">
+            <span id="user-display">👤 Cargando...</span>
             <button id="btn-logout" class="btn-small">Cerrar Sesión</button>
-        </div>
+        </header>
         
         <div class="main-layout">
             <section class="quizzes-column">
-                <button id="btn-go-editor" class="btn-main" style="background: #00b894; margin-bottom: 20px;">
+                <button id="btn-go-editor" class="btn-main btn-create">
                     ➕ Crear Nuevo Quiz
                 </button>
-                <div id="quiz-list">
+                <div id="quiz-list-container">
                     <h3>Quizzes Disponibles</h3>
+                    <div id="quiz-list">
+                        </div>
                 </div>
             </section>
 
@@ -36,67 +40,81 @@
                 <div class="section-divider">
                     <span>🏆 TOP RANKING</span>
                 </div>
-                <div id="global-ranking-list"></div>
+                <div id="global-ranking-list">
+                    </div>
                 
                 <div id="admin-controls" class="hidden ranking-admin-footer">
-                    <button id="btn-reset-ranking" class="btn-reset-admin">♻️ Resetear Rankings</button>
+                    <button id="btn-reset-ranking" class="btn-reset-admin">♻️ Resetear Tabla de Puntos</button>
                 </div>
             </aside>
         </div>
     </div>
 
     <div id="quiz-screen" class="container hidden">
-        <h2 id="current-quiz-title">Cargando...</h2>
-        <div id="options-container"></div>
+        <header class="quiz-header">
+            <h2 id="current-quiz-title">Preparando juego...</h2>
+            <div id="quiz-progress-bar"></div>
+        </header>
+        <div id="options-container" class="options-grid">
+            </div>
     </div>
 
     <div id="editor-screen" class="container hidden">
         <h2>🛠️ Creador de Quizzes</h2>
-        <p id="questions-added-count">Preguntas preparadas: 0</p>
+        <div class="editor-status">
+            <p id="questions-added-count">Preguntas preparadas: 0</p>
+        </div>
         
         <div class="editor-box">
-            <input type="text" id="quiz-title-input" placeholder="Título del Quiz">
+            <input type="text" id="quiz-title-input" placeholder="Título del Quiz (ej: Historia Universal)">
             <hr>
             <h3 id="q-number-display">Pregunta #1</h3>
-            <textarea id="q-text" placeholder="Escribe tu pregunta aquí..."></textarea>
-            <div id="options-setup"></div>
+            <textarea id="q-text" placeholder="Escribe la pregunta aquí..."></textarea>
             
-            <button id="btn-add-option" class="btn-small" style="background: #0984e3; margin-bottom: 10px;">
-                ➕ Añadir opción (Máx 6)
+            <div id="options-setup">
+                </div>
+            
+            <button id="btn-add-option" class="btn-small btn-blue">
+                ➕ Añadir opción (Máximo 6)
             </button>
             
-            <div style="display: flex; gap: 10px;">
-                <button id="btn-next-q" class="btn-main" style="background: #6c5ce7;">Siguiente Pregunta</button>
-                <button id="btn-save-quiz" class="btn-main" style="background: #27ae60;">Publicar Quiz</button>
+            <div class="editor-actions">
+                <button id="btn-next-q" class="btn-main btn-purple">Siguiente Pregunta</button>
+                <button id="btn-save-quiz" class="btn-main btn-green">Publicar Quiz</button>
             </div>
         </div>
-        <button id="btn-back-home" class="btn-small" style="margin-top:15px;">⬅️ Cancelar y Volver</button>
+        <button id="btn-back-home" class="btn-small">⬅️ Cancelar y Volver</button>
     </div>
 
     <div id="settings-screen" class="container hidden">
-        <h2 id="settings-quiz-title">Ajustes</h2>
-        <button id="btn-view-responses" class="btn-main" style="background: #0984e3;">Ver quién respondió</button>
-        <button id="btn-delete-quiz" class="btn-main" style="background: #d63031; margin-top: 10px;">Borrar Quiz</button>
-        <button id="btn-settings-back" class="btn-small" style="margin-top: 20px;">⬅️ Volver</button>
+        <h2 id="settings-quiz-title">Ajustes del Quiz</h2>
+        <div class="settings-actions">
+            <button id="btn-view-responses" class="btn-main btn-blue">Ver quién respondió</button>
+            <button id="btn-delete-quiz" class="btn-main btn-red">Borrar este Quiz</button>
+        </div>
+        <button id="btn-settings-back" class="btn-small">⬅️ Volver al Inicio</button>
     </div>
 
     <div id="responses-screen" class="container hidden">
-        <h2>👥 Jugadores</h2>
-        <div id="responses-table"></div>
-        <button id="btn-responses-back" class="btn-small">⬅️ Volver</button>
+        <h2>👥 Jugadores que completaron</h2>
+        <div id="responses-table">
+            </div>
+        <button id="btn-responses-back" class="btn-small">⬅️ Volver a Ajustes</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
         const firebaseConfig = {
-            apiKey: "TU_API_KEY",
+            apiKey: "AIzaSy...", // Reemplaza con tu configuración
             authDomain: "quizzesgem.firebaseapp.com",
-            projectId: "quizzesgem",
+            projectId: "quizzesgem", 
             storageBucket: "quizzesgem.appspot.com",
             messagingSenderId: "...",
             appId: "..."
         };
+
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app);
     </script>
