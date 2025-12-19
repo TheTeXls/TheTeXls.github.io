@@ -3,6 +3,9 @@ import {
     deleteDoc, serverTimestamp, query, where, getDocs, writeBatch 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// ==========================================
+// 1. ESTADO GLOBAL Y CONFIGURACIÓN
+// ==========================================
 const ADMIN_ID = "admin";
 const ADMIN_PASS = "gem";
 
@@ -14,7 +17,9 @@ let currentQIdx = 0;
 let sessionScore = 0;
 let sessionDetails = [];
 
-// --- UTILIDADES ---
+// ==========================================
+// 2. NAVEGACIÓN Y UTILIDADES DE UI
+// ==========================================
 function showScreen(id) {
     const screens = document.querySelectorAll('.container');
     screens.forEach(s => s.classList.add('hidden'));
@@ -22,7 +27,6 @@ function showScreen(id) {
     if(target) target.classList.remove('hidden');
 }
 
-// Esta función genera los 4 campos que te faltaban
 function resetEditorInputs() {
     const setup = document.getElementById('options-setup');
     if(setup) {
@@ -37,33 +41,9 @@ function resetEditorInputs() {
     if(qText) qText.value = "";
 }
 
-// --- LIMPIEZA 5 HORAS ---
-async function cleanupOldQuizzes() {
-    const now = Date.now();
-    const fiveHours = 5 * 60 * 60 * 1000;
-    try {
-        const snap = await getDocs(collection(window.db, "quizzes"));
-        const batch = writeBatch(window.db);
-        let count = 0;
-        snap.forEach(d => {
-            const data = d.data();
-            if (data.createdAt?.toMillis && (now - data.createdAt.toMillis() > fiveHours)) {
-                batch.delete(d.ref); count++;
-            }
-        });
-        if (count > 0) await batch.commit();
-    } catch (e) {}
-}
-
-window.showHome = function() {
-    if (!currentUser) return showScreen('login-screen');
-    showScreen('home-screen');
-    const uDisp = document.getElementById('user-display');
-    if(uDisp) uDisp.innerText = displayName;
-    cleanupOldQuizzes();
-    initRealtime();
-};
-
+// ==========================================
+// 3. AUTENTICACIÓN Y SESIÓN
+// ==========================================
 async function handleLogin() {
     const rawName = document.getElementById('user-name-input').value.trim();
     const pass = document.getElementById('user-pass-input').value.trim();
@@ -89,6 +69,9 @@ async function handleLogin() {
     window.showHome();
 }
 
+// ==========================================
+// 4. SINCRONIZACIÓN EN TIEMPO REAL (Firebase)
+// ==========================================
 async function initRealtime() {
     let playedIds = [];
     if (currentUser !== ADMIN_ID) {
@@ -97,6 +80,7 @@ async function initRealtime() {
         playedIds = sSnap.docs.map(d => d.data().quizId);
     }
 
+    // Escucha de Quizzes
     onSnapshot(collection(window.db, "quizzes"), (snap) => {
         const list = document.getElementById('quiz-list');
         list.innerHTML = "<h3>Quizzes Disponibles</h3>";
@@ -135,6 +119,7 @@ async function initRealtime() {
         });
     });
 
+    // Escucha de Ranking
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         rList.innerHTML = ""; 
@@ -161,7 +146,9 @@ async function initRealtime() {
     });
 }
 
-// --- JUEGO ---
+// ==========================================
+// 5. LÓGICA DEL JUEGO (Gameplay)
+// ==========================================
 function startQuizSession(quiz) {
     activeQuiz = quiz; currentQIdx = 0; sessionScore = 0; sessionDetails = [];
     showScreen('quiz-screen');
@@ -202,6 +189,26 @@ async function finishGame() {
     window.showHome();
 }
 
+// ==========================================
+// 6. EDITOR DE QUIZZES
+// ==========================================
+async function cleanupOldQuizzes() {
+    const now = Date.now();
+    const fiveHours = 5 * 60 * 60 * 1000;
+    try {
+        const snap = await getDocs(collection(window.db, "quizzes"));
+        const batch = writeBatch(window.db);
+        let count = 0;
+        snap.forEach(d => {
+            const data = d.data();
+            if (data.createdAt?.toMillis && (now - data.createdAt.toMillis() > fiveHours)) {
+                batch.delete(d.ref); count++;
+            }
+        });
+        if (count > 0) await batch.commit();
+    } catch (e) {}
+}
+
 function openSettings(quiz) {
     document.getElementById('settings-quiz-title').innerText = quiz.title;
     showScreen('settings-screen');
@@ -228,20 +235,34 @@ function openSettings(quiz) {
     };
 }
 
-// --- EVENTOS ---
+// ==========================================
+// 7. INICIALIZACIÓN (Event Listeners)
+// ==========================================
+window.showHome = function() {
+    if (!currentUser) return showScreen('login-screen');
+    showScreen('home-screen');
+    const uDisp = document.getElementById('user-display');
+    if(uDisp) uDisp.innerText = displayName;
+    cleanupOldQuizzes();
+    initRealtime();
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Auth
     document.getElementById('btn-login-action').onclick = handleLogin;
     document.getElementById('btn-logout').onclick = () => { localStorage.clear(); window.location.reload(); };
     
+    // Editor Navigation
     document.getElementById('btn-go-editor').onclick = () => {
         tempQuestions = [];
         document.getElementById('q-number-display').innerText = "Pregunta #1";
         document.getElementById('questions-added-count').innerText = "Preparadas: 0";
         document.getElementById('quiz-title-input').value = "";
-        resetEditorInputs(); // Restaurar campos al entrar
+        resetEditorInputs();
         showScreen('editor-screen');
     };
 
+    // Editor Logic
     document.getElementById('btn-next-q').onclick = () => {
         const text = document.getElementById('q-text').value.trim();
         const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
@@ -251,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tempQuestions.push({ text, opts });
         document.getElementById('q-number-display').innerText = `Pregunta #${tempQuestions.length + 1}`;
         document.getElementById('questions-added-count').innerText = `Preparadas: ${tempQuestions.length}`;
-        resetEditorInputs(); // Restaurar campos para la siguiente pregunta
+        resetEditorInputs();
     };
 
     document.getElementById('btn-save-quiz').onclick = async () => {
@@ -268,9 +289,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.showHome();
     };
 
+    // Global Navigation
     document.getElementById('btn-back-home').onclick = () => window.showHome();
     document.getElementById('btn-settings-back').onclick = () => window.showHome();
     document.getElementById('btn-responses-back').onclick = () => showScreen('settings-screen');
-});
 
-window.showHome();
+    window.showHome();
+});
