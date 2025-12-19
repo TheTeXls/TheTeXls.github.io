@@ -1,160 +1,43 @@
-/* --- ESTILOS GENERALES Y LAYOUT --- */
-body { 
-    font-family: sans-serif; 
-    background: #f0f2f5; 
-    display: flex; 
-    justify-content: center; 
-    padding: 20px; 
-    margin: 0; 
-    min-height: 100vh; 
-}
-
-.container { 
-    background: white; 
-    padding: 20px; 
-    border-radius: 12px; 
-    width: 100%; 
-    max-width: 400px; 
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-    text-align: center; 
-    height: fit-content; 
-}
-
+body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh; }
+.container { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; height: fit-content; }
 .hidden { display: none !important; }
 
-/* --- DISEÑO RESPONSIVO (PC: 2 Columnas) --- */
 @media (min-width: 850px) {
     #home-screen.container { max-width: 900px; }
     .main-layout { display: flex; gap: 25px; text-align: left; }
     .quizzes-column { flex: 1.6; }
-    .ranking-column { 
-        flex: 1; 
-        background: #fafafa; 
-        padding: 15px; 
-        border-radius: 12px; 
-        border: 1px solid #eee; 
-        display: flex;
-        flex-direction: column;
-    }
+    .ranking-column { flex: 1; background: #fafafa; padding: 15px; border-radius: 12px; border: 1px solid #eee; position: relative; min-height: 350px; display: flex; flex-direction: column; }
 }
 
-/* --- MEJORA LISTA DE QUIZZES Y BOTÓN AJUSTES --- */
+/* PUNTO #1: Botón Ajustes en la esquina superior derecha de la tarjeta */
 .quiz-card { 
-    position: relative; /* Necesario para el botón de ajustes ⚙️ */
+    position: relative; 
     border: 1px solid #eee; 
-    padding: 15px; 
+    padding: 20px; 
     margin: 15px 0; 
     border-radius: 10px; 
-    text-align: left; 
     background: #fff; 
     border-left: 5px solid #6c5ce7; 
-    transition: transform 0.2s; 
 }
 
-.quiz-card:hover { transform: scale(1.01); }
-
-/* Ajustes arriba a la derecha */
 .btn-settings-corner {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 5px;
-    line-height: 1;
-    border-radius: 50%;
-    transition: background 0.2s;
-}
-
-.btn-settings-corner:hover {
     background: #f1f2f6;
+    border: 1px solid #dfe6e9;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
 }
 
-/* --- MEJORA MENU CREADOR (EDITOR) --- */
-.editor-box { 
-    border: 2px solid #6c5ce7; 
-    padding: 15px; 
-    border-radius: 10px; 
-    background: #fcfcfc; 
-    margin: 15px 0; 
-}
-
-#q-text { 
-    width: 100%; 
-    padding: 10px; 
-    border-radius: 8px; 
-    border: 1px solid #ddd; 
-    height: 70px; 
-    margin-bottom: 10px; 
-    resize: none; 
-    box-sizing: border-box; 
-    font-family: inherit;
-}
-
-.opt-input { 
-    transition: all 0.2s; 
-    border-left: 4px solid #ddd; 
-}
-
-.opt-input:focus { 
-    border-left: 4px solid #6c5ce7; 
-    background: #f9f8ff; 
-    outline: none; 
-}
-
-/* --- ELEMENTOS DE UI --- */
-input { 
-    width: 100%; 
-    padding: 12px; 
-    margin: 8px 0; 
-    border: 1px solid #ddd; 
-    border-radius: 8px; 
-    box-sizing: border-box; 
-}
-
-.btn-main { 
-    width: 100%; 
-    padding: 14px; 
-    background: #6c5ce7; 
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    font-weight: bold; 
-    margin-top: 10px; 
-    font-size: 16px; 
-}
-
-.btn-small { 
-    background: #eee; 
-    border: none; 
-    padding: 8px 12px; 
-    border-radius: 6px; 
-    cursor: pointer; 
-    font-size: 12px; 
-    font-weight: bold; 
-}
-
-.header-user { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 20px; 
-    font-weight: bold; 
-}
-
-/* --- RANKING Y BOTÓN RESET --- */
-.ranking-item { 
-    display: flex; 
-    justify-content: space-between; 
-    padding: 10px; 
-    background: #fff; 
-    border: 1px solid #eee; 
-    margin-bottom: 5px; 
-    border-radius: 6px; 
-    font-size: 14px; 
+/* PUNTO #2: Botón Reset en la esquina inferior derecha del ranking */
+.ranking-admin-footer {
+    margin-top: auto;
+    text-align: right;
+    padding-top: 15px;
 }
 
 .btn-reset-admin {
@@ -166,24 +49,12 @@ input {
     cursor: pointer;
     font-size: 11px;
     font-weight: bold;
-    text-transform: uppercase;
 }
 
-.section-divider { 
-    display: flex; 
-    align-items: center; 
-    text-align: center; 
-    margin: 10px 0 20px 0; 
-    color: #a29bfe; 
-    font-weight: bold; 
-    font-size: 0.9em; 
-}
-
-.section-divider::before, .section-divider::after { 
-    content: ''; 
-    flex: 1; 
-    border-bottom: 2px solid #dfe6e9; 
-}
-
-.section-divider:not(:empty)::before { margin-right: .5em; }
-.section-divider:not(:empty)::after { margin-left: .5em; }
+/* OTROS ESTILOS */
+.editor-box { border: 2px solid #6c5ce7; padding: 15px; border-radius: 10px; background: #fcfcfc; margin: 15px 0; }
+#q-text { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; height: 70px; margin-bottom: 10px; resize: none; box-sizing: border-box; }
+.btn-main { width: 100%; padding: 14px; background: #6c5ce7; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+.btn-small { background: #eee; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.ranking-item { display: flex; justify-content: space-between; padding: 10px; background: #fff; border: 1px solid #eee; margin-bottom: 5px; border-radius: 6px; }
+.section-divider { display: flex; align-items: center; text-align: center; margin: 10px 0 20px 0; color: #a29bfe; font-weight: bold; }

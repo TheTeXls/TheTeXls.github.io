@@ -38,7 +38,7 @@
                 </div>
                 <div id="global-ranking-list"></div>
                 
-                <div id="admin-controls" class="hidden" style="text-align: right; margin-top: 15px;">
+                <div id="admin-controls" class="hidden ranking-admin-footer">
                     <button id="btn-reset-ranking" class="btn-reset-admin">♻️ Resetear Rankings</button>
                 </div>
             </aside>
@@ -55,13 +55,11 @@
         <p id="questions-added-count">Preguntas preparadas: 0</p>
         
         <div class="editor-box">
-            <input type="text" id="quiz-title-input" placeholder="Título del Quiz (ej: Cultura General)">
+            <input type="text" id="quiz-title-input" placeholder="Título del Quiz">
             <hr>
             <h3 id="q-number-display">Pregunta #1</h3>
             <textarea id="q-text" placeholder="Escribe tu pregunta aquí..."></textarea>
-            
-            <div id="options-setup">
-                </div>
+            <div id="options-setup"></div>
             
             <button id="btn-add-option" class="btn-small" style="background: #0984e3; margin-bottom: 10px;">
                 ➕ Añadir opción (Máx 6)
@@ -83,25 +81,22 @@
     </div>
 
     <div id="responses-screen" class="container hidden">
-        <h2>👥 Jugadores que completaron</h2>
+        <h2>👥 Jugadores</h2>
         <div id="responses-table"></div>
-        <button id="btn-responses-back" class="btn-small">⬅️ Volver a Ajustes</button>
+        <button id="btn-responses-back" class="btn-small">⬅️ Volver</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // CONFIGURACIÓN DE TU FIREBASE
         const firebaseConfig = {
-            apiKey: "AIzaSy...", // REEMPLAZA CON TU KEY REAL
+            apiKey: "TU_API_KEY",
             authDomain: "quizzesgem.firebaseapp.com",
-            projectId: "quizzesgem", 
+            projectId: "quizzesgem",
             storageBucket: "quizzesgem.appspot.com",
             messagingSenderId: "...",
             appId: "..."
         };
-
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app);
     </script>
