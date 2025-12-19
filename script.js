@@ -4,7 +4,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ==========================================
-// 1. ESTADO GLOBAL Y CONFIGURACIÓN
+// 1. ESTADO GLOBAL
 // ==========================================
 const ADMIN_ID = "admin";
 const ADMIN_PASS = "gem";
@@ -16,9 +16,11 @@ let activeQuiz = null;
 let currentQIdx = 0;
 let sessionScore = 0;
 let sessionDetails = [];
+let isListening = false;
+let userMap = {}; // Para guardar ID -> Nombre Real
 
 // ==========================================
-// 2. NAVEGACIÓN Y UTILIDADES DE UI
+// 2. UTILIDADES UI
 // ==========================================
 function showScreen(id) {
     const screens = document.querySelectorAll('.container');
@@ -27,6 +29,7 @@ function showScreen(id) {
     if(target) target.classList.remove('hidden');
 }
 
+// Restaura los campos básicos (1 correcta, 3 incorrectas)
 function resetEditorInputs() {
     const setup = document.getElementById('options-setup');
     if(setup) {
@@ -37,12 +40,21 @@ function resetEditorInputs() {
             <input type="text" class="opt-input" placeholder="❌ Respuesta Incorrecta">
         `;
     }
-    const qText = document.getElementById('q-text');
-    if(qText) qText.value = "";
+    document.getElementById('q-text').value = "";
+}
+
+// Nueva función para el botón que no funcionaba
+function addExtraIncorrectOption() {
+    const setup = document.getElementById('options-setup');
+    const input = document.createElement('input');
+    input.type = "text";
+    input.className = "opt-input";
+    input.placeholder = "❌ Otra Respuesta Incorrecta";
+    setup.appendChild(input);
 }
 
 // ==========================================
-// 3. AUTENTICACIÓN Y SESIÓN
+// 3. AUTENTICACIÓN
 // ==========================================
 async function handleLogin() {
     const rawName = document.getElementById('user-name-input').value.trim();
@@ -50,76 +62,77 @@ async function handleLogin() {
     if (!rawName || !pass) return alert("Rellena los campos");
     
     const lowerName = rawName.toLowerCase();
-    if (lowerName === ADMIN_ID && pass === ADMIN_PASS) {
-        currentUser = ADMIN_ID; displayName = "Admin Maestro";
-    } else {
-        const userRef = doc(window.db, "users", lowerName);
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-            if (snap.data().pass !== pass) return alert("Password incorrecto");
-            displayName = snap.data().originalName || rawName;
+    try {
+        if (lowerName === ADMIN_ID && pass === ADMIN_PASS) {
+            currentUser = ADMIN_ID; displayName = "Admin Maestro";
         } else {
-            await setDoc(userRef, { originalName: rawName, pass: pass, createdAt: serverTimestamp() });
-            displayName = rawName;
+            const userRef = doc(window.db, "users", lowerName);
+            const snap = await getDoc(userRef);
+            if (snap.exists()) {
+                if (snap.data().pass !== pass) return alert("Password incorrecto");
+                displayName = snap.data().originalName || rawName;
+            } else {
+                await setDoc(userRef, { originalName: rawName, pass: pass, createdAt: serverTimestamp() });
+                displayName = rawName;
+            }
+            currentUser = lowerName;
         }
-        currentUser = lowerName;
-    }
-    localStorage.setItem('quizUser', currentUser);
-    localStorage.setItem('quizDisplayName', displayName);
-    window.showHome();
+        localStorage.setItem('quizUser', currentUser);
+        localStorage.setItem('quizDisplayName', displayName);
+        window.showHome();
+    } catch(e) { console.error(e); }
 }
 
 // ==========================================
-// 4. SINCRONIZACIÓN EN TIEMPO REAL (Firebase)
+// 4. FIREBASE REALTIME (Corregido Ranking)
 // ==========================================
 async function initRealtime() {
-    let playedIds = [];
-    if (currentUser !== ADMIN_ID) {
-        const qS = query(collection(window.db, "scores"), where("user", "==", currentUser));
-        const sSnap = await getDocs(qS);
-        playedIds = sSnap.docs.map(d => d.data().quizId);
-    }
+    if (isListening) return;
+    isListening = true;
 
-    // Escucha de Quizzes
-    onSnapshot(collection(window.db, "quizzes"), (snap) => {
+    // Cargar nombres reales para el Ranking
+    const loadUserNames = async () => {
+        const uSnap = await getDocs(collection(window.db, "users"));
+        uSnap.forEach(u => { userMap[u.id] = u.data().originalName; });
+        userMap["admin"] = "Admin Maestro";
+    };
+    await loadUserNames();
+
+    // Listen Quizzes
+    onSnapshot(collection(window.db, "quizzes"), async (snap) => {
         const list = document.getElementById('quiz-list');
         list.innerHTML = "<h3>Quizzes Disponibles</h3>";
-        if (snap.empty) {
-            list.innerHTML += `<div id="no-quizzes-msg">No hay quizzes 😴</div>`;
-            return;
+        
+        let playedIds = [];
+        if (currentUser !== ADMIN_ID) {
+            const qS = query(collection(window.db, "scores"), where("user", "==", currentUser));
+            const sSnap = await getDocs(qS);
+            playedIds = sSnap.docs.map(d => d.data().quizId);
         }
+
         snap.forEach(d => {
             const q = d.data();
-            const isPlayed = playedIds.includes(d.id);
-            const isAuthor = (q.author?.toLowerCase() === currentUser);
             const div = document.createElement('div');
-            div.className = 'quiz-card'; 
-            div.innerHTML = `<b>${q.title}</b><br><small>${q.questions?.length || 0} preguntas • Por: ${q.author}</small>`;
+            div.className = 'quiz-card';
+            div.innerHTML = `<b>${q.title}</b><br><small>${q.questions?.length} preg. • Por: ${q.author}</small>`;
             
             const btn = document.createElement('button');
             btn.className = "btn-main";
             if (currentUser === ADMIN_ID) {
                 btn.innerText = "Probar (Admin) 🎮"; btn.onclick = () => startQuizSession({id: d.id, ...q});
-            } else if (isAuthor) {
+            } else if (q.author === displayName) {
                 btn.innerText = "Tu Quiz 🚫"; btn.disabled = true; btn.style.background = "#ccc";
-            } else if (isPlayed) {
+            } else if (playedIds.includes(d.id)) {
                 btn.innerText = "Completado ✅"; btn.disabled = true; btn.style.background = "#ccc";
             } else {
                 btn.innerText = "Jugar 🎮"; btn.onclick = () => startQuizSession({id: d.id, ...q});
             }
             div.appendChild(btn);
-
-            if (currentUser === ADMIN_ID || isAuthor) {
-                const bSet = document.createElement('button');
-                bSet.className = "btn-small"; bSet.style.marginTop = "10px"; bSet.innerText = "⚙️ Ajustes";
-                bSet.onclick = () => openSettings({id: d.id, ...q});
-                div.appendChild(bSet);
-            }
             list.appendChild(div);
         });
     });
 
-    // Escucha de Ranking
+    // Listen Ranking (Corregido para mostrar displayName)
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         rList.innerHTML = ""; 
@@ -129,47 +142,30 @@ async function initRealtime() {
             if(s.user) totals[s.user] = (totals[s.user] || 0) + (s.points || 0);
         });
         Object.entries(totals).sort((a,b) => b[1]-a[1]).forEach(([u, p]) => {
-            rList.innerHTML += `<div class="ranking-item"><span>${u}</span><b>${p} pts</b></div>`;
+            const nameToShow = userMap[u] || u; // Usa el mapa o el ID si no lo encuentra
+            rList.innerHTML += `<div class="ranking-item"><span>${nameToShow}</span><b>${p} pts</b></div>`;
         });
-        if (currentUser === ADMIN_ID) {
-            const bR = document.createElement('button');
-            bR.className = "btn-reset-admin"; bR.innerText = "♻️ Reset Rankings";
-            bR.onclick = async () => {
-                if(confirm("¿Borrar todo?")){
-                    const b = writeBatch(window.db);
-                    const sn = await getDocs(collection(window.db, "scores"));
-                    sn.forEach(d => b.delete(d.ref)); await b.commit();
-                }
-            };
-            rList.appendChild(bR);
-        }
     });
 }
 
 // ==========================================
-// 5. LÓGICA DEL JUEGO (Gameplay)
+// 5. JUEGO (Mantiene lógica v2.6)
 // ==========================================
-function startQuizSession(quiz) {
-    activeQuiz = quiz; currentQIdx = 0; sessionScore = 0; sessionDetails = [];
-    showScreen('quiz-screen');
-    renderQuestion();
-}
-
 function renderQuestion() {
     const qData = activeQuiz.questions[currentQIdx];
     document.getElementById('current-quiz-title').innerText = activeQuiz.title;
     const cont = document.getElementById('options-container');
     cont.innerHTML = `<p style="font-weight:bold; margin-bottom:15px;">${qData.text}</p>`;
     
+    const correctAns = qData.opts[0];
     [...qData.opts].sort(() => Math.random() - 0.5).forEach(opt => {
         const btn = document.createElement('button');
-        btn.className = "btn-main"; 
-        btn.style.background = "white"; btn.style.color = "#6c5ce7"; btn.style.border = "2px solid #6c5ce7";
+        btn.className = "btn-main";
         btn.innerText = opt;
         btn.onclick = () => {
-            const ok = (opt === qData.opts[0]);
+            const ok = (opt === correctAns);
             sessionDetails.push({ pregunta: qData.text, respuesta: opt, correcta: ok });
-            if (ok) { sessionScore++; alert("✅ ¡Correcto!"); } else { alert("❌ Incorrecto"); }
+            if (ok) sessionScore++;
             currentQIdx++;
             if (currentQIdx < activeQuiz.questions.length) renderQuestion();
             else finishGame();
@@ -178,121 +174,76 @@ function renderQuestion() {
     });
 }
 
+function startQuizSession(quiz) {
+    activeQuiz = quiz; currentQIdx = 0; sessionScore = 0; sessionDetails = [];
+    showScreen('quiz-screen');
+    renderQuestion();
+}
+
 async function finishGame() {
-    alert(`Fin. Puntos: ${sessionScore}/${activeQuiz.questions.length}`);
     if (currentUser !== ADMIN_ID) {
         await addDoc(collection(window.db, "scores"), {
-            user: currentUser, points: sessionScore, totalQuestions: activeQuiz.questions.length,
-            quizId: activeQuiz.id, details: sessionDetails, date: serverTimestamp()
+            user: currentUser, points: sessionScore, quizId: activeQuiz.id, 
+            details: sessionDetails, date: serverTimestamp()
         });
     }
     window.showHome();
 }
 
 // ==========================================
-// 6. EDITOR DE QUIZZES
+// 6. EDITOR
 // ==========================================
 async function cleanupOldQuizzes() {
     const now = Date.now();
-    const fiveHours = 5 * 60 * 60 * 1000;
-    try {
-        const snap = await getDocs(collection(window.db, "quizzes"));
-        const batch = writeBatch(window.db);
-        let count = 0;
-        snap.forEach(d => {
-            const data = d.data();
-            if (data.createdAt?.toMillis && (now - data.createdAt.toMillis() > fiveHours)) {
-                batch.delete(d.ref); count++;
-            }
-        });
-        if (count > 0) await batch.commit();
-    } catch (e) {}
-}
-
-function openSettings(quiz) {
-    document.getElementById('settings-quiz-title').innerText = quiz.title;
-    showScreen('settings-screen');
-    document.getElementById('btn-delete-quiz').onclick = async () => {
-        if(confirm("¿Borrar?")) { await deleteDoc(doc(window.db, "quizzes", quiz.id)); window.showHome(); }
-    };
-    document.getElementById('btn-view-responses').onclick = async () => {
-        showScreen('responses-screen');
-        const table = document.getElementById('responses-table');
-        table.innerHTML = "Cargando...";
-        const sn = await getDocs(query(collection(window.db, "scores"), where("quizId", "==", quiz.id)));
-        table.innerHTML = sn.empty ? "Sin datos" : "";
-        sn.forEach(d => {
-            const r = d.data();
-            const div = document.createElement('div');
-            div.className = "quiz-card";
-            let detH = "";
-            if(r.details) r.details.forEach((dt, i) => {
-                detH += `<div style="font-size:11px; margin-top:5px;">${i+1}. ${dt.pregunta}<br><b style="color:${dt.correcta?'#00b894':'#ff7675'}">${dt.respuesta}</b></div>`;
-            });
-            div.innerHTML = `<b>👤 ${r.user}</b>: ${r.points} pts<hr>${detH}`;
-            table.appendChild(div);
-        });
-    };
+    const snap = await getDocs(collection(window.db, "quizzes"));
+    const batch = writeBatch(window.db);
+    snap.forEach(d => {
+        const created = d.data().createdAt?.toMillis() || now;
+        if (now - created > 5 * 60 * 60 * 1000) batch.delete(d.ref);
+    });
+    await batch.commit();
 }
 
 // ==========================================
-// 7. INICIALIZACIÓN (Event Listeners)
+// 7. INICIALIZACIÓN
 // ==========================================
 window.showHome = function() {
     if (!currentUser) return showScreen('login-screen');
     showScreen('home-screen');
-    const uDisp = document.getElementById('user-display');
-    if(uDisp) uDisp.innerText = displayName;
+    document.getElementById('user-display').innerText = displayName;
     cleanupOldQuizzes();
     initRealtime();
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Auth
     document.getElementById('btn-login-action').onclick = handleLogin;
-    document.getElementById('btn-logout').onclick = () => { localStorage.clear(); window.location.reload(); };
+    document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
     
-    // Editor Navigation
     document.getElementById('btn-go-editor').onclick = () => {
         tempQuestions = [];
-        document.getElementById('q-number-display').innerText = "Pregunta #1";
-        document.getElementById('questions-added-count').innerText = "Preparadas: 0";
-        document.getElementById('quiz-title-input').value = "";
         resetEditorInputs();
         showScreen('editor-screen');
     };
 
-    // Editor Logic
+    // CONEXIÓN DE LOS BOTONES DEL EDITOR
+    document.getElementById('btn-add-option').onclick = addExtraIncorrectOption;
+
     document.getElementById('btn-next-q').onclick = () => {
         const text = document.getElementById('q-text').value.trim();
         const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
-        if(!text || opts.some(o => !o)) return alert("Incompleto");
-        if(tempQuestions.length >= 10) return alert("Máximo 10");
-        
+        if(!text || opts.some(o => !o)) return alert("Completa todo");
         tempQuestions.push({ text, opts });
-        document.getElementById('q-number-display').innerText = `Pregunta #${tempQuestions.length + 1}`;
-        document.getElementById('questions-added-count').innerText = `Preparadas: ${tempQuestions.length}`;
         resetEditorInputs();
     };
 
     document.getElementById('btn-save-quiz').onclick = async () => {
         const title = document.getElementById('quiz-title-input').value.trim();
-        const curT = document.getElementById('q-text').value.trim();
-        const curO = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
-        
-        if(curT && !curO.some(o => !o) && tempQuestions.length < 10) {
-            tempQuestions.push({ text: curT, opts: curO });
-        }
-
-        if(!title || tempQuestions.length < 5) return alert("Título y mínimo 5 preguntas.");
-        await addDoc(collection(window.db, "quizzes"), { title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp() });
+        if(!title || tempQuestions.length < 5) return alert("Título + 5 preguntas mín.");
+        await addDoc(collection(window.db, "quizzes"), { 
+            title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp() 
+        });
         window.showHome();
     };
 
-    // Global Navigation
     document.getElementById('btn-back-home').onclick = () => window.showHome();
-    document.getElementById('btn-settings-back').onclick = () => window.showHome();
-    document.getElementById('btn-responses-back').onclick = () => showScreen('settings-screen');
-
-    window.showHome();
 });
