@@ -1,9 +1,8 @@
-/* BASE */
-body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh; }
+body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh; }
 .container { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); text-align: center; height: fit-content; }
 .hidden { display: none !important; }
 
-/* LAYOUT PC */
+/* DISEÑO PC */
 @media (min-width: 850px) {
     #home-screen.container { max-width: 950px; }
     .main-layout { display: flex; gap: 25px; text-align: left; }
@@ -11,11 +10,11 @@ body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-cont
     .ranking-column { flex: 1; background: #fafafa; padding: 20px; border-radius: 12px; border: 1px solid #eee; position: relative; min-height: 400px; display: flex; flex-direction: column; }
 }
 
-/* TARJETAS Y BOTÓN AJUSTES (PUNTO 1) */
+/* TARJETAS */
 .quiz-card { position: relative; border: 1px solid #eee; padding: 20px; margin: 15px 0; border-radius: 12px; background: #fff; border-left: 6px solid #6c5ce7; }
-.btn-settings-corner { position: absolute; top: 10px; right: 10px; background: #f1f2f6; border: 1px solid #ddd; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
+.btn-settings-corner { position: absolute; top: 10px; right: 10px; background: #f1f2f6; border: 1px solid #ddd; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
 
-/* RANKING Y RESET (PUNTO 2) */
+/* RANKING */
 .ranking-item { display: flex; justify-content: space-between; padding: 12px; background: #fff; border: 1px solid #eee; margin-bottom: 8px; border-radius: 8px; }
 .ranking-admin-footer { margin-top: auto; text-align: right; padding-top: 15px; }
 .btn-reset-admin { background: #ff7675; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
@@ -23,12 +22,12 @@ body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-cont
 /* EDITOR */
 .editor-box { border: 2px solid #6c5ce7; padding: 20px; border-radius: 12px; background: #fff; margin: 15px 0; }
 #q-text { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; height: 70px; margin-bottom: 10px; resize: none; box-sizing: border-box; }
-.opt-input { margin-bottom: 8px; border-left: 4px solid #ddd; padding-left: 10px; }
+.opt-input { margin-bottom: 8px; border-left: 4px solid #ddd; padding-left: 10px; width: 90%; }
 .opt-input:first-child { border-left-color: #00b894; background: #f0fff4; }
 .label-correct { display: block; text-align: left; font-size: 11px; font-weight: bold; color: #00b894; margin-bottom: 5px; }
 .editor-actions { display: flex; gap: 10px; }
 #editor-preview-container { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; border: 1px dashed #ccc; text-align: left; }
-.preview-item { border-bottom: 1px solid #eee; padding: 5px 0; font-size: 13px; }
+.preview-item { border-bottom: 1px solid #eee; padding: 5px 0; font-size: 13px; display: flex; justify-content: space-between; }
 
 /* BOTONES */
 .btn-main { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
@@ -38,9 +37,7 @@ body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-cont
 .btn-red { background: #d63031; color: white; }
 .btn-create { background: #00b894; color: white; margin-bottom: 20px; }
 .btn-small { background: #eee; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+.btn-main:disabled { background: #ccc !important; cursor: not-allowed; opacity: 0.8; }
 
-/* ANIMACIÓN CARGANDO */
-.loading-text { color: #6c5ce7; font-weight: bold; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-.section-divider { display: flex; align-items: center; text-align: center; margin-bottom: 20px; color: #a29bfe; font-weight: bold; }
-.section-divider::before, .section-divider::after { content: ''; flex: 1; border-bottom: 2px solid #dfe6e9; }
+.section-divider { display: flex; align-items: center; text-align: center; margin-bottom: 20px; color: #a29bfe; font-weight: bold; font-size: 14px; }
+.section-divider::before, .section-divider::after { content: ''; flex: 1; border-bottom: 2px solid #dfe6e9; margin: 0 10px; }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quizzes GEM - V1.1</title>
+    <title>Quizzes GEM - V1.1.2</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -70,7 +70,7 @@
         </div>
 
         <div id="editor-preview-container" class="hidden">
-            <h4>📋 Resumen de preguntas:</h4>
+            <h4>📋 Resumen de contenido:</h4>
             <div id="editor-preview-list"></div>
         </div>
 
@@ -79,13 +79,13 @@
 
     <div id="settings-screen" class="container hidden">
         <h2 id="settings-quiz-title">Ajustes</h2>
-        <button id="btn-view-responses" class="btn-main btn-blue">Ver respuestas</button>
-        <button id="btn-delete-quiz" class="btn-main btn-red">Borrar Quiz</button>
+        <button id="btn-view-responses" class="btn-main btn-blue">Ver quién respondió</button>
+        <button id="btn-delete-quiz" class="btn-main btn-red">Borrar este Quiz</button>
         <button id="btn-settings-back" class="btn-small" style="margin-top:20px;">⬅️ Volver</button>
     </div>
 
     <div id="responses-screen" class="container hidden">
-        <h2>👥 Jugadores</h2>
+        <h2>👥 Resultados de Jugadores</h2>
         <div id="responses-table"></div>
         <button id="btn-responses-back" class="btn-small">⬅️ Volver</button>
     </div>
@@ -93,7 +93,14 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        const firebaseConfig = { apiKey: "TU_API_KEY", authDomain: "quizzesgem.firebaseapp.com", projectId: "quizzesgem", storageBucket: "quizzesgem.appspot.com", messagingSenderId: "...", appId: "..." };
+        const firebaseConfig = { 
+            apiKey: "TU_API_KEY", 
+            authDomain: "quizzesgem.firebaseapp.com", 
+            projectId: "quizzesgem", 
+            storageBucket: "quizzesgem.appspot.com", 
+            messagingSenderId: "...", 
+            appId: "..." 
+        };
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app);
     </script>
