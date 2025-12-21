@@ -86,3 +86,27 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; color:
     padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;
 }
 .btn-exit-quiz:hover { background: #fee2e2; }
+
+/* AJUSTE V1.7: GRID DINÁMICO REFORZADO */
+.options-grid-game { 
+    display: grid; 
+    /* El sistema calcula automáticamente si caben 2 o 3 columnas según el ancho */
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    gap: 15px; 
+    margin-top: 20px;
+}
+
+.btn-option-game { 
+    aspect-ratio: 16 / 10; /* Forma rectangular basada en tu imagen */
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    padding: 20px; border: none; border-radius: 18px; font-weight: 700; font-size: 16px;
+    cursor: pointer; transition: 0.3s; background: #6366f1; color: white;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+}
+
+.btn-option-game:hover { transform: translateY(-3px); background: #4f46e5; }
+
+.btn-exit-quiz {
+    margin-top: 30px; background: #fef2f2; border: 2px solid #ef4444; color: #ef4444;
+    padding: 12px 20px; border-radius: 14px; cursor: pointer; font-weight: 700; width: 100%;
+}

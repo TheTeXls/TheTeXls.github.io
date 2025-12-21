@@ -110,7 +110,8 @@ async function initRealtime() {
 
     const quizList = document.getElementById('quiz-list');
     onSnapshot(collection(window.db, "quizzes"), async (snap) => {
-        document.getElementById('quiz-loading-status').classList.add('hidden');
+        const loading = document.getElementById('quiz-loading-status');
+        if (loading) loading.classList.add('hidden');
         quizList.innerHTML = snap.empty ? "<p>No hay quizzes aún.</p>" : "";
         
         let playedIds = [];
@@ -151,24 +152,50 @@ async function initRealtime() {
 }
 
 // ==========================================
-// 5. JUEGO V1.6 (GRID Y CONDICIÓN DE SALIDA)
+// 5. JUEGO V1.7 (BLINDAJE Y LÓGICA DE SALIDA)
 // ==========================================
-function startQuizSession(quiz) {
-    activeQuiz = quiz; currentQIdx = 0; sessionScore = 0;
-    showScreen('quiz-screen'); renderQuestion();
+async function startQuizSession(quiz) {
+    // BLINDAJE: Verificar si el usuario ya tiene puntos en este quiz antes de dejarlo entrar
+    if (currentUser !== ADMIN_ID) {
+        const checkScore = await getDocs(query(
+            collection(window.db, "scores"), 
+            where("user", "==", currentUser),
+            where("quizId", "==", quiz.id)
+        ));
+
+        let hasPoints = false;
+        checkScore.forEach(d => {
+            if (d.data().points > 0) hasPoints = true;
+        });
+
+        if (hasPoints) {
+            alert("No puedes volver a jugar un quiz donde ya tienes aciertos registrados.");
+            return window.showHome();
+        }
+    }
+
+    activeQuiz = quiz; 
+    currentQIdx = 0; 
+    sessionScore = 0;
+    showScreen('quiz-screen'); 
+    renderQuestion();
 }
 
 async function exitQuizSession() {
-    if (confirm("¿Estás seguro de que quieres abandonar?")) {
+    if (confirm("¿Estás seguro de que quieres abandonar? Si ya tienes aciertos, se guardarán y no podrás repetir el quiz.")) {
         // LÓGICA DE CONDICIÓN:
         if (sessionScore > 0 && currentUser !== ADMIN_ID) {
-            // Si tiene puntos, se guarda y se bloquea el quiz
+            // Guardamos los puntos actuales para bloquear re-intentos
             await addDoc(collection(window.db, "scores"), { 
-                user: currentUser, points: sessionScore, quizId: activeQuiz.id, date: serverTimestamp() 
+                user: currentUser, 
+                points: sessionScore, 
+                quizId: activeQuiz.id, 
+                date: serverTimestamp(),
+                status: "abandoned"
             });
-            alert(`Saliste con ${sessionScore} aciertos. El quiz se marcará como jugado.`);
-        } else {
-            alert("Saliste con 0 aciertos. Podrás volver a intentarlo más tarde.");
+            alert(`Saliste con ${sessionScore} aciertos. Se ha registrado tu puntuación.`);
+        } else if (sessionScore === 0) {
+            alert("Saliste con 0 aciertos. Podrás intentarlo de nuevo más tarde.");
         }
         window.showHome();
     }
@@ -193,8 +220,9 @@ function renderQuestion() {
         b.onclick = async () => {
             if (opt === correct) sessionScore++;
             currentQIdx++;
-            if (currentQIdx < activeQuiz.questions.length) renderQuestion();
-            else {
+            if (currentQIdx < activeQuiz.questions.length) {
+                renderQuestion();
+            } else {
                 if (currentUser !== ADMIN_ID) {
                     await addDoc(collection(window.db, "scores"), { 
                         user: currentUser, points: sessionScore, quizId: activeQuiz.id, date: serverTimestamp() 
@@ -207,7 +235,6 @@ function renderQuestion() {
         cont.appendChild(b);
     });
 
-    // Botón de salida
     const exitBtn = document.createElement('button');
     exitBtn.className = "btn-exit-quiz";
     exitBtn.style = "grid-column: 1 / -1; margin-top:20px;";
@@ -239,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-go-editor').onclick = () => { tempQuestions = []; document.getElementById('quiz-title-input').value = ""; resetEditorInputs(); showScreen('editor-screen'); };
     document.getElementById('btn-add-option').onclick = () => { const setup = document.getElementById('options-setup'); if (setup.querySelectorAll('input').length >= 9) return alert("Máximo 10"); const i = document.createElement('input'); i.className = "opt-input"; i.placeholder = "❌ Opción incorrecta"; setup.appendChild(i); };
     document.getElementById('btn-next-q').onclick = () => { const t = document.getElementById('q-text').value.trim(); const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim()); if (!t || opts.some(o => !o)) return alert("Faltan datos"); tempQuestions.push({ text: t, opts: opts }); resetEditorInputs(); };
-    document.getElementById('btn-save-quiz').onclick = async () => { const title = document.getElementById('quiz-title-input').value.trim(); if (!title || tempQuestions.length < 5) return alert("Min 5 preguntas"); await addDoc(collection(collection(window.db, "quizzes")), { title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp() }); window.showHome(); };
+    document.getElementById('btn-save-quiz').onclick = async () => { const title = document.getElementById('quiz-title-input').value.trim(); if (!title || tempQuestions.length < 5) return alert("Min 5 preguntas"); await addDoc(collection(window.db, "quizzes"), { title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp() }); window.showHome(); };
     document.getElementById('btn-reset-ranking').onclick = async () => { if (confirm("¿Resetear?")) { const batch = writeBatch(window.db); const sn = await getDocs(collection(window.db, "scores")); sn.forEach(d => batch.delete(d.ref)); await batch.commit(); } };
     document.getElementById('btn-back-home').onclick = () => window.showHome();
     document.getElementById('btn-settings-back').onclick = () => window.showHome();
