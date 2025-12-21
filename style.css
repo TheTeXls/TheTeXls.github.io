@@ -60,3 +60,29 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; color:
 .ranking-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-radius: 14px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
 .badge { background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
 .loading-box { background: #f8f9fc; border: 2px dashed #6c5ce7; padding: 20px; border-radius: 12px; margin: 15px 0; }
+
+/* AJUSTE V1.6: GRID DINÁMICO */
+.options-grid-game { 
+    display: grid; 
+    /* auto-fit hace que si hay pocas, se estiren, y si hay muchas, se acomoden */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+    gap: 15px; 
+    margin-top: 20px;
+}
+
+.btn-option-game { 
+    aspect-ratio: 16 / 9; /* Forma rectangular estética */
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    padding: 20px; border: none; border-radius: 18px; font-weight: 700; font-size: 16px;
+    cursor: pointer; transition: 0.3s; background: #6366f1; color: white;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+}
+
+.btn-option-game:hover { transform: translateY(-3px); background: #4f46e5; }
+
+/* Botón de Salida */
+.btn-exit-quiz {
+    margin-top: 30px; background: none; border: 1.5px solid #ef4444; color: #ef4444;
+    padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;
+}
+.btn-exit-quiz:hover { background: #fee2e2; }

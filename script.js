@@ -43,9 +43,7 @@ function updateEditorUI() {
                 <span><b>${i+1}.</b> ${q.text}</span>
                 <button onclick="window.removeQuestion(${i})" style="color:#ef4444; border:none; background:none; cursor:pointer; font-weight:bold;">✖</button>
             </div>`).join('');
-    } else { 
-        previewCont.classList.add('hidden'); 
-    }
+    } else { previewCont.classList.add('hidden'); }
 }
 
 window.removeQuestion = (index) => {
@@ -56,19 +54,10 @@ window.removeQuestion = (index) => {
 function resetEditorInputs() {
     const qText = document.getElementById('q-text');
     if (qText) qText.value = "";
-
     const correctPlaceholder = document.getElementById('correct-option-placeholder');
-    if (correctPlaceholder) {
-        correctPlaceholder.innerHTML = `<input type="text" class="opt-input" data-correct="true" placeholder="✅ Respuesta Correcta">`;
-    }
-
+    if (correctPlaceholder) correctPlaceholder.innerHTML = `<input type="text" class="opt-input" data-correct="true" placeholder="✅ Respuesta Correcta">`;
     const setup = document.getElementById('options-setup');
-    if (setup) {
-        setup.innerHTML = `
-            <input type="text" class="opt-input" placeholder="❌ Opción incorrecta">
-            <input type="text" class="opt-input" placeholder="❌ Opción incorrecta">
-            <input type="text" class="opt-input" placeholder="❌ Opción incorrecta">`;
-    }
+    if (setup) setup.innerHTML = `<input type="text" class="opt-input" placeholder="❌ Opción incorrecta"><input type="text" class="opt-input" placeholder="❌ Opción incorrecta"><input type="text" class="opt-input" placeholder="❌ Opción incorrecta">`;
     updateEditorUI();
 }
 
@@ -80,13 +69,11 @@ async function handleLogin() {
     const passInput = document.getElementById('user-pass-input');
     const rawName = nameInput.value.trim();
     const pass = passInput.value.trim();
-
     if (!rawName || !pass) return alert("Completa los datos");
     const lowerName = rawName.toLowerCase();
     
     if (lowerName === ADMIN_ID && pass === ADMIN_PASS) {
-        currentUser = ADMIN_ID;
-        displayName = "Admin Maestro";
+        currentUser = ADMIN_ID; displayName = "Admin Maestro";
     } else {
         const userRef = doc(window.db, "users", lowerName);
         try {
@@ -107,12 +94,11 @@ async function handleLogin() {
 }
 
 // ==========================================
-// 4. TIEMPO REAL Y BLINDAJE
+// 4. TIEMPO REAL
 // ==========================================
 async function initRealtime() {
     if (isListening) return;
     isListening = true;
-
     const uSnap = await getDocs(collection(window.db, "users"));
     uSnap.forEach(u => userMap[u.id] = u.data().originalName);
     userMap["admin"] = "Admin Maestro";
@@ -123,75 +109,40 @@ async function initRealtime() {
     }
 
     const quizList = document.getElementById('quiz-list');
-    const loadingStatus = document.getElementById('quiz-loading-status');
-
     onSnapshot(collection(window.db, "quizzes"), async (snap) => {
-        if (loadingStatus) loadingStatus.classList.add('hidden');
-        if (!quizList) return;
+        document.getElementById('quiz-loading-status').classList.add('hidden');
         quizList.innerHTML = snap.empty ? "<p>No hay quizzes aún.</p>" : "";
-
+        
         let playedIds = [];
         const scoreSnap = await getDocs(query(collection(window.db, "scores"), where("user", "==", currentUser)));
         playedIds = scoreSnap.docs.map(doc => doc.data().quizId);
 
         snap.forEach(d => {
-            const q = d.data();
-            const qId = d.id;
+            const q = d.data(); const qId = d.id;
             const div = document.createElement('div');
             div.className = 'quiz-card';
             const isAuthor = (q.author === displayName);
             const played = playedIds.includes(qId);
-
-            div.innerHTML = `
-                <div style="margin-bottom:15px">
-                    <h4 style="font-size:18px; margin-bottom:5px">${q.title}</h4>
-                    <span class="badge">${q.questions.length} preg.</span>
-                    <small style="margin-left:10px; color:#64748b">por ${q.author}</small>
-                </div>
-            `;
-
+            div.innerHTML = `<div style="margin-bottom:15px"><h4 style="font-size:18px; margin-bottom:5px">${q.title}</h4><span class="badge">${q.questions.length} preg.</span><small style="margin-left:10px; color:#64748b">por ${q.author}</small></div>`;
             const btn = document.createElement('button');
             btn.className = "btn-main btn-purple";
-
-            if (currentUser === ADMIN_ID) {
-                btn.innerText = "Probar Quiz (Admin)";
-                btn.onclick = () => startQuizSession({id: qId, ...q});
-            } else if (isAuthor) {
-                btn.innerText = "Tu creación";
-                btn.disabled = true;
-                btn.style.opacity = "0.5";
-            } else if (played) {
-                btn.innerText = "Completado ✅";
-                btn.disabled = true;
-                btn.style.background = "#f1f5f9";
-                btn.style.color = "#94a3b8";
-            } else {
-                btn.innerText = "Jugar ahora";
-                btn.onclick = () => startQuizSession({id: qId, ...q});
-            }
-
+            if (currentUser === ADMIN_ID) { btn.innerText = "Probar Quiz (Admin)"; btn.onclick = () => startQuizSession({id: qId, ...q}); }
+            else if (isAuthor) { btn.innerText = "Tu creación"; btn.disabled = true; btn.style.opacity = "0.5"; }
+            else if (played) { btn.innerText = "Completado ✅"; btn.disabled = true; btn.style.background = "#f1f5f9"; btn.style.color = "#94a3b8"; }
+            else { btn.innerText = "Jugar ahora"; btn.onclick = () => startQuizSession({id: qId, ...q}); }
             if (currentUser === ADMIN_ID || isAuthor) {
-                const bS = document.createElement('button');
-                bS.className = "btn-small";
-                bS.style.position = "absolute"; bS.style.top = "20px"; bS.style.right = "20px";
-                bS.innerHTML = "⚙️";
-                bS.onclick = (e) => { e.stopPropagation(); openSettings({id: qId, ...q}); };
-                div.appendChild(bS);
+                const bS = document.createElement('button'); bS.className = "btn-small"; bS.style.position = "absolute"; bS.style.top = "20px"; bS.style.right = "20px"; bS.innerHTML = "⚙️";
+                bS.onclick = (e) => { e.stopPropagation(); openSettings({id: qId, ...q}); }; div.appendChild(bS);
             }
-            div.appendChild(btn);
-            quizList.appendChild(div);
+            div.appendChild(btn); quizList.appendChild(div);
         });
     });
 
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
-        if (!rList) return;
         rList.innerHTML = snap.empty ? "<p>Nadie aún.</p>" : "";
         let scores = {};
-        snap.forEach(d => {
-            const s = d.data();
-            if (s.user) scores[s.user] = (scores[s.user] || 0) + s.points;
-        });
+        snap.forEach(d => { const s = d.data(); if (s.user) scores[s.user] = (scores[s.user] || 0) + s.points; });
         Object.entries(scores).sort((a,b) => b[1]-a[1]).forEach(([uid, pts], i) => {
             const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":"";
             rList.innerHTML += `<div class="ranking-item"><span>${medal} ${userMap[uid] || uid}</span><b>${pts} pts</b></div>`;
@@ -200,31 +151,44 @@ async function initRealtime() {
 }
 
 // ==========================================
-// 5. JUEGO (GAMEPLAY CON GRID)
+// 5. JUEGO V1.6 (GRID Y CONDICIÓN DE SALIDA)
 // ==========================================
 function startQuizSession(quiz) {
     activeQuiz = quiz; currentQIdx = 0; sessionScore = 0;
     showScreen('quiz-screen'); renderQuestion();
 }
 
+async function exitQuizSession() {
+    if (confirm("¿Estás seguro de que quieres abandonar?")) {
+        // LÓGICA DE CONDICIÓN:
+        if (sessionScore > 0 && currentUser !== ADMIN_ID) {
+            // Si tiene puntos, se guarda y se bloquea el quiz
+            await addDoc(collection(window.db, "scores"), { 
+                user: currentUser, points: sessionScore, quizId: activeQuiz.id, date: serverTimestamp() 
+            });
+            alert(`Saliste con ${sessionScore} aciertos. El quiz se marcará como jugado.`);
+        } else {
+            alert("Saliste con 0 aciertos. Podrás volver a intentarlo más tarde.");
+        }
+        window.showHome();
+    }
+}
+
 function renderQuestion() {
     const qData = activeQuiz.questions[currentQIdx];
     document.getElementById('current-quiz-title').innerText = activeQuiz.title;
     const cont = document.getElementById('options-container');
-    if (!cont) return;
-
-    cont.innerHTML = ""; // Se limpia para el nuevo diseño de Grid
+    cont.innerHTML = ""; 
     
-    // El enunciado arriba del Grid
     const questionBox = document.createElement('div');
-    questionBox.style = "grid-column: span 2; background:#f1f5f9; padding:25px; border-radius:20px; margin-bottom:10px;";
+    questionBox.style = "grid-column: 1 / -1; background:#f1f5f9; padding:25px; border-radius:20px; margin-bottom:10px;";
     questionBox.innerHTML = `<p style="font-size:18px; font-weight:700; color:#1e293b;">${qData.text}</p>`;
     cont.appendChild(questionBox);
 
     const correct = qData.opts[0];
     [...qData.opts].sort(() => Math.random() - 0.5).forEach(opt => {
         const b = document.createElement('button');
-        b.className = "btn-option-game"; // Nueva clase de grid
+        b.className = "btn-option-game";
         b.innerText = opt;
         b.onclick = async () => {
             if (opt === correct) sessionScore++;
@@ -242,80 +206,41 @@ function renderQuestion() {
         };
         cont.appendChild(b);
     });
+
+    // Botón de salida
+    const exitBtn = document.createElement('button');
+    exitBtn.className = "btn-exit-quiz";
+    exitBtn.style = "grid-column: 1 / -1; margin-top:20px;";
+    exitBtn.innerText = "Abandonar Quiz 🚪";
+    exitBtn.onclick = exitQuizSession;
+    cont.appendChild(exitBtn);
 }
 
 // ==========================================
-// 6. GESTIÓN
+// 6. GESTIÓN E INICIO
 // ==========================================
 function openSettings(quiz) {
     document.getElementById('settings-quiz-title').innerText = quiz.title;
     showScreen('settings-screen');
-    document.getElementById('btn-delete-quiz').onclick = async () => {
-        if (confirm("¿Eliminar?")) {
-            await deleteDoc(doc(window.db, "quizzes", quiz.id));
-            window.showHome();
-        }
-    };
+    document.getElementById('btn-delete-quiz').onclick = async () => { if (confirm("¿Eliminar?")) { await deleteDoc(doc(window.db, "quizzes", quiz.id)); window.showHome(); } };
     document.getElementById('btn-view-responses').onclick = async () => {
-        showScreen('responses-screen');
-        const t = document.getElementById('responses-table');
-        t.innerHTML = "Cargando...";
+        showScreen('responses-screen'); const t = document.getElementById('responses-table'); t.innerHTML = "Cargando...";
         const sn = await getDocs(query(collection(window.db, "scores"), where("quizId", "==", quiz.id)));
         t.innerHTML = sn.empty ? "Sin respuestas" : "";
-        sn.forEach(d => {
-            const r = d.data();
-            t.innerHTML += `<div class="ranking-item"><span>${userMap[r.user] || r.user}</span><b>${r.points} pts</b></div>`;
-        });
+        sn.forEach(d => { const r = d.data(); t.innerHTML += `<div class="ranking-item"><span>${userMap[r.user] || r.user}</span><b>${r.points} pts</b></div>`; });
     };
 }
 
-// ==========================================
-// 7. INICIALIZACIÓN
-// ==========================================
-window.showHome = () => {
-    if (!currentUser) return showScreen('login-screen');
-    showScreen('home-screen');
-    document.getElementById('user-display').innerText = "👤 " + displayName;
-    initRealtime();
-};
+window.showHome = () => { if (!currentUser) return showScreen('login-screen'); showScreen('home-screen'); document.getElementById('user-display').innerText = "👤 " + displayName; initRealtime(); };
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login-action').onclick = handleLogin;
     document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
-    document.getElementById('btn-go-editor').onclick = () => {
-        tempQuestions = [];
-        document.getElementById('quiz-title-input').value = "";
-        resetEditorInputs();
-        showScreen('editor-screen');
-    };
-    document.getElementById('btn-add-option').onclick = () => {
-        const setup = document.getElementById('options-setup');
-        if (setup.querySelectorAll('input').length >= 9) return alert("Máximo 10 opciones totales");
-        const i = document.createElement('input');
-        i.className = "opt-input"; i.placeholder = "❌ Opción incorrecta";
-        setup.appendChild(i);
-    };
-    document.getElementById('btn-next-q').onclick = () => {
-        const t = document.getElementById('q-text').value.trim();
-        const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
-        if (!t || opts.some(o => !o)) return alert("Completa la pregunta");
-        tempQuestions.push({ text: t, opts: opts });
-        resetEditorInputs();
-    };
-    document.getElementById('btn-save-quiz').onclick = async () => {
-        const title = document.getElementById('quiz-title-input').value.trim();
-        if (!title || tempQuestions.length < 5) return alert("Falta título o preguntas (min 5)");
-        await addDoc(collection(window.db, "quizzes"), { title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp() });
-        window.showHome();
-    };
-    document.getElementById('btn-reset-ranking').onclick = async () => {
-        if (confirm("¿RESETEAR TODO?")) {
-            const batch = writeBatch(window.db);
-            const sn = await getDocs(collection(window.db, "scores"));
-            sn.forEach(d => batch.delete(d.ref));
-            await batch.commit();
-        }
-    };
+    document.getElementById('btn-go-editor').onclick = () => { tempQuestions = []; document.getElementById('quiz-title-input').value = ""; resetEditorInputs(); showScreen('editor-screen'); };
+    document.getElementById('btn-add-option').onclick = () => { const setup = document.getElementById('options-setup'); if (setup.querySelectorAll('input').length >= 9) return alert("Máximo 10"); const i = document.createElement('input'); i.className = "opt-input"; i.placeholder = "❌ Opción incorrecta"; setup.appendChild(i); };
+    document.getElementById('btn-next-q').onclick = () => { const t = document.getElementById('q-text').value.trim(); const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim()); if (!t || opts.some(o => !o)) return alert("Faltan datos"); tempQuestions.push({ text: t, opts: opts }); resetEditorInputs(); };
+    document.getElementById('btn-save-quiz').onclick = async () => { const title = document.getElementById('quiz-title-input').value.trim(); if (!title || tempQuestions.length < 5) return alert("Min 5 preguntas"); await addDoc(collection(collection(window.db, "quizzes")), { title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp() }); window.showHome(); };
+    document.getElementById('btn-reset-ranking').onclick = async () => { if (confirm("¿Resetear?")) { const batch = writeBatch(window.db); const sn = await getDocs(collection(window.db, "scores")); sn.forEach(d => batch.delete(d.ref)); await batch.commit(); } };
     document.getElementById('btn-back-home').onclick = () => window.showHome();
     document.getElementById('btn-settings-back').onclick = () => window.showHome();
     document.getElementById('btn-responses-back').onclick = () => showScreen('settings-screen');
