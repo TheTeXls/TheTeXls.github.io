@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quizzes GEM - V1.2 Blindada</title>
+    <title>Quizzes GEM - V1.3</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -29,7 +29,6 @@
                     <h3>Quizzes Disponibles</h3>
                     <div id="quiz-loading-status" class="loading-box">
                         <p class="loading-text">🛡️ Verificando base de datos...</p>
-                        <small>Asegurando persistencia de quizzes...</small>
                     </div>
                     <div id="quiz-list"></div>
                 </div>
@@ -51,34 +50,45 @@
     </div>
 
     <div id="editor-screen" class="container hidden">
-        <h2>🛠️ Creador de Quizzes</h2>
-        <div class="editor-status">
-            <p id="questions-added-count">Preguntas preparadas: 0</p>
-        </div>
+        <h2 class="editor-title">🛠️ Panel de Creación</h2>
         
-        <div class="editor-box">
-            <input type="text" id="quiz-title-input" placeholder="Título del Quiz">
-            <hr>
-            <h3 id="q-number-display">Pregunta #1</h3>
-            <textarea id="q-text" placeholder="Escribe la pregunta..."></textarea>
-            
-            <label class="label-correct">✅ RESPUESTA CORRECTA (LA PRIMERA)</label>
-            <div id="options-setup"></div>
-            
-            <button id="btn-add-option" class="btn-small" style="width:100%; margin-bottom:15px;">➕ Añadir opción incorrecta</button>
+        <div class="editor-card">
+            <div class="input-group">
+                <label>Título del Quiz</label>
+                <input type="text" id="quiz-title-input" class="modern-input" placeholder="Ej: Historia Universal">
+            </div>
+
+            <div class="question-builder">
+                <div class="builder-header">
+                    <h3 id="q-number-display">Pregunta #1</h3>
+                    <span id="questions-added-count" class="badge">0 preparadas</span>
+                </div>
+
+                <div class="input-group">
+                    <label>Enunciado de la pregunta</label>
+                    <textarea id="q-text" class="modern-textarea" placeholder="¿Qué quieres preguntar?"></textarea>
+                </div>
+                
+                <div class="options-grid">
+                    <label class="label-correct">✅ RESPUESTA CORRECTA</label>
+                    <div id="options-setup"></div>
+                </div>
+                
+                <button id="btn-add-option" class="btn-add-opt">➕ Añadir opción incorrecta</button>
+            </div>
             
             <div class="editor-actions">
                 <button id="btn-next-q" class="btn-main btn-purple">💾 Guardar Pregunta</button>
-                <button id="btn-save-quiz" class="btn-main btn-green">🚀 Publicar Quiz</button>
+                <button id="btn-save-quiz" class="btn-main btn-green">🚀 Publicar Quiz Completo</button>
             </div>
         </div>
 
         <div id="editor-preview-container" class="hidden">
-            <h4>📋 Resumen de contenido:</h4>
+            <h4>📋 Resumen del Quiz:</h4>
             <div id="editor-preview-list"></div>
         </div>
 
-        <button id="btn-back-home" class="btn-small" style="margin-top:15px;">⬅️ Salir sin guardar</button>
+        <button id="btn-back-home" class="btn-small" style="margin-top:20px;">⬅️ Salir al Menú</button>
     </div>
 
     <div id="settings-screen" class="container hidden">
@@ -89,7 +99,7 @@
     </div>
 
     <div id="responses-screen" class="container hidden">
-        <h2>👥 Resultados de Jugadores</h2>
+        <h2>👥 Resultados</h2>
         <div id="responses-table"></div>
         <button id="btn-responses-back" class="btn-small">⬅️ Volver</button>
     </div>
@@ -97,14 +107,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        const firebaseConfig = { 
-            apiKey: "TU_API_KEY", 
-            authDomain: "quizzesgem.firebaseapp.com", 
-            projectId: "quizzesgem", 
-            storageBucket: "quizzesgem.appspot.com", 
-            messagingSenderId: "...", 
-            appId: "..." 
-        };
+        const firebaseConfig = { apiKey: "TU_API_KEY", authDomain: "quizzesgem.firebaseapp.com", projectId: "quizzesgem", storageBucket: "quizzesgem.appspot.com", messagingSenderId: "...", appId: "..." };
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app);
     </script>

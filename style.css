@@ -1,44 +1,60 @@
-body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh; }
-.container { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); text-align: center; height: fit-content; }
+/* BASE Y CONTENEDORES */
+body { font-family: 'Inter', system-ui, sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh; color: #2d3436; }
+.container { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 480px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); text-align: center; height: fit-content; }
 .hidden { display: none !important; }
 
-/* REFUERZO DE CARGA */
-.loading-box { background: #f8f9fc; border: 2px dashed #6c5ce7; padding: 20px; border-radius: 12px; margin: 15px 0; }
-.loading-text { color: #6c5ce7; font-weight: bold; animation: pulse 1.5s infinite; margin: 0; }
-@keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-
+/* DISEÑO PC */
 @media (min-width: 850px) {
-    #home-screen.container { max-width: 950px; }
-    .main-layout { display: flex; gap: 25px; text-align: left; }
-    .quizzes-column { flex: 1.6; }
-    .ranking-column { flex: 1; background: #fafafa; padding: 20px; border-radius: 12px; border: 1px solid #eee; position: relative; min-height: 400px; display: flex; flex-direction: column; }
+    #home-screen.container { max-width: 1000px; }
+    .main-layout { display: flex; gap: 30px; text-align: left; }
+    .quizzes-column { flex: 1.5; }
+    .ranking-column { flex: 1; background: #fcfcfc; padding: 25px; border-radius: 18px; border: 1px solid #edf2f7; }
 }
 
-.quiz-card { position: relative; border: 1px solid #eee; padding: 20px; margin: 15px 0; border-radius: 12px; background: #fff; border-left: 6px solid #6c5ce7; transition: transform 0.2s; }
-.quiz-card:hover { transform: translateY(-2px); }
-.btn-settings-corner { position: absolute; top: 10px; right: 10px; background: #f1f2f6; border: 1px solid #ddd; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+/* MEJORAS DEL CREADOR (UI NUEVA) */
+.editor-card { background: #ffffff; border-radius: 15px; text-align: left; }
+.input-group { margin-bottom: 20px; text-align: left; }
+.input-group label { display: block; font-size: 13px; font-weight: 700; color: #636e72; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-.ranking-item { display: flex; justify-content: space-between; padding: 12px; background: #fff; border: 1px solid #eee; margin-bottom: 8px; border-radius: 8px; }
-.ranking-admin-footer { margin-top: auto; text-align: right; padding-top: 15px; }
-.btn-reset-admin { background: #ff7675; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
+.modern-input, .modern-textarea {
+    width: 100%; padding: 12px 15px; border: 2px solid #edf2f7; border-radius: 10px; font-size: 15px; 
+    transition: all 0.3s; box-sizing: border-box; background: #fbfbfb;
+}
+.modern-input:focus, .modern-textarea:focus {
+    border-color: #6c5ce7; background: #fff; outline: none; box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.1);
+}
+.modern-textarea { height: 90px; resize: none; }
 
-.editor-box { border: 2px solid #6c5ce7; padding: 20px; border-radius: 12px; background: #fff; margin: 15px 0; }
-#q-text { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; height: 70px; margin-bottom: 10px; resize: none; box-sizing: border-box; }
-.opt-input { margin-bottom: 8px; border-left: 4px solid #ddd; padding-left: 10px; width: 90%; }
-.opt-input:first-child { border-left-color: #00b894; background: #f0fff4; }
-.label-correct { display: block; text-align: left; font-size: 11px; font-weight: bold; color: #00b894; margin-bottom: 5px; }
-.editor-actions { display: flex; gap: 10px; }
-#editor-preview-container { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; border: 1px dashed #ccc; text-align: left; }
-.preview-item { border-bottom: 1px solid #eee; padding: 5px 0; font-size: 13px; display: flex; justify-content: space-between; }
+.question-builder { background: #f8fafc; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0; margin-top: 10px; }
+.builder-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.badge { background: #6c5ce7; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
 
-.btn-main { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-.btn-purple { background: #6c5ce7; color: white; }
-.btn-green { background: #27ae60; color: white; }
-.btn-blue { background: #0984e3; color: white; }
-.btn-red { background: #d63031; color: white; }
-.btn-create { background: #00b894; color: white; margin-bottom: 20px; }
-.btn-small { background: #eee; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
-.btn-main:disabled { background: #ccc !important; cursor: not-allowed; opacity: 0.8; }
+/* INPUTS DE OPCIONES */
+.opt-input { 
+    width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1.5px solid #e2e8f0; 
+    border-radius: 8px; font-size: 14px; box-sizing: border-box;
+}
+.opt-input:first-child { border-left: 5px solid #00b894; background: #f0fff4; }
+.label-correct { font-size: 11px; font-weight: bold; color: #00b894; margin-bottom: 8px; display: block; }
 
-.section-divider { display: flex; align-items: center; text-align: center; margin-bottom: 20px; color: #a29bfe; font-weight: bold; font-size: 14px; }
-.section-divider::before, .section-divider::after { content: ''; flex: 1; border-bottom: 2px solid #dfe6e9; margin: 0 10px; }
+.btn-add-opt {
+    width: 100%; background: none; border: 2px dashed #cbd5e0; color: #718096; 
+    padding: 10px; border-radius: 10px; cursor: pointer; font-weight: 600; margin-bottom: 20px; transition: 0.2s;
+}
+.btn-add-opt:hover { border-color: #6c5ce7; color: #6c5ce7; background: #f5f3ff; }
+
+/* RESUMEN Y CARDS */
+.quiz-card { position: relative; border: 1px solid #edf2f7; padding: 20px; margin: 15px 0; border-radius: 16px; background: #fff; border-left: 8px solid #6c5ce7; }
+#editor-preview-container { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-top: 25px; text-align: left; }
+.preview-item { background: white; padding: 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; }
+
+/* BOTONES */
+.btn-main { width: 100%; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; margin-top: 12px; font-size: 15px; transition: 0.3s; }
+.btn-purple { background: #6c5ce7; color: white; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3); }
+.btn-green { background: #00b894; color: white; box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3); }
+.btn-purple:hover, .btn-green:hover { transform: translateY(-2px); opacity: 0.9; }
+
+/* OTROS */
+.loading-box { background: #f8f9fc; border: 2px dashed #6c5ce7; padding: 20px; border-radius: 12px; margin: 15px 0; }
+.section-divider { display: flex; align-items: center; margin-bottom: 20px; color: #a0aec0; font-size: 12px; font-weight: bold; }
+.section-divider::after { content: ''; flex: 1; border-bottom: 2px solid #edf2f7; margin-left: 10px; }
