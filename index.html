@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quizzes GEM - V1.1.2</title>
+    <title>Quizzes GEM - V1.2 Blindada</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -27,6 +27,10 @@
                 <button id="btn-go-editor" class="btn-main btn-create">➕ Crear Nuevo Quiz</button>
                 <div id="quiz-list-container">
                     <h3>Quizzes Disponibles</h3>
+                    <div id="quiz-loading-status" class="loading-box">
+                        <p class="loading-text">🛡️ Verificando base de datos...</p>
+                        <small>Asegurando persistencia de quizzes...</small>
+                    </div>
                     <div id="quiz-list"></div>
                 </div>
             </section>

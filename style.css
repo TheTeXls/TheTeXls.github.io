@@ -2,7 +2,11 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; 
 .container { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); text-align: center; height: fit-content; }
 .hidden { display: none !important; }
 
-/* DISEÑO PC */
+/* REFUERZO DE CARGA */
+.loading-box { background: #f8f9fc; border: 2px dashed #6c5ce7; padding: 20px; border-radius: 12px; margin: 15px 0; }
+.loading-text { color: #6c5ce7; font-weight: bold; animation: pulse 1.5s infinite; margin: 0; }
+@keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
 @media (min-width: 850px) {
     #home-screen.container { max-width: 950px; }
     .main-layout { display: flex; gap: 25px; text-align: left; }
@@ -10,16 +14,14 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; 
     .ranking-column { flex: 1; background: #fafafa; padding: 20px; border-radius: 12px; border: 1px solid #eee; position: relative; min-height: 400px; display: flex; flex-direction: column; }
 }
 
-/* TARJETAS */
-.quiz-card { position: relative; border: 1px solid #eee; padding: 20px; margin: 15px 0; border-radius: 12px; background: #fff; border-left: 6px solid #6c5ce7; }
+.quiz-card { position: relative; border: 1px solid #eee; padding: 20px; margin: 15px 0; border-radius: 12px; background: #fff; border-left: 6px solid #6c5ce7; transition: transform 0.2s; }
+.quiz-card:hover { transform: translateY(-2px); }
 .btn-settings-corner { position: absolute; top: 10px; right: 10px; background: #f1f2f6; border: 1px solid #ddd; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
 
-/* RANKING */
 .ranking-item { display: flex; justify-content: space-between; padding: 12px; background: #fff; border: 1px solid #eee; margin-bottom: 8px; border-radius: 8px; }
 .ranking-admin-footer { margin-top: auto; text-align: right; padding-top: 15px; }
 .btn-reset-admin { background: #ff7675; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
 
-/* EDITOR */
 .editor-box { border: 2px solid #6c5ce7; padding: 20px; border-radius: 12px; background: #fff; margin: 15px 0; }
 #q-text { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; height: 70px; margin-bottom: 10px; resize: none; box-sizing: border-box; }
 .opt-input { margin-bottom: 8px; border-left: 4px solid #ddd; padding-left: 10px; width: 90%; }
@@ -29,7 +31,6 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; 
 #editor-preview-container { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; border: 1px dashed #ccc; text-align: left; }
 .preview-item { border-bottom: 1px solid #eee; padding: 5px 0; font-size: 13px; display: flex; justify-content: space-between; }
 
-/* BOTONES */
 .btn-main { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
 .btn-purple { background: #6c5ce7; color: white; }
 .btn-green { background: #27ae60; color: white; }
