@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quizzes GEM - V1.4 Profesional</title>
+    <title>Quizzes GEM - V1.5 Profesional</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
@@ -53,7 +53,7 @@
         <div class="quiz-header">
             <h2 id="current-quiz-title">Cargando...</h2>
         </div>
-        <div id="options-container"></div>
+        <div id="options-container" class="options-grid-game"></div>
     </div>
 
     <div id="editor-screen" class="container hidden">
@@ -64,7 +64,7 @@
         
         <div class="editor-main-card">
             <div class="input-field">
-                <input type="text" id="quiz-title-input" class="title-input" placeholder="Título del Quiz (Ej: Programación Básica)">
+                <input type="text" id="quiz-title-input" class="title-input" placeholder="Título del Quiz">
             </div>
 
             <div class="question-frame">
@@ -72,20 +72,18 @@
                 <textarea id="q-text" class="question-textarea" placeholder="Escribe tu pregunta aquí..."></textarea>
                 
                 <div class="options-container-editor">
-                    <div class="correct-option-wrapper">
-                        <span class="indicator-dot"></span>
-                        <div id="correct-option-placeholder">
-                            </div>
-                    </div>
-                    <div id="options-setup" class="incorrect-options-grid">
-                        </div>
+                    <div id="correct-option-placeholder"></div>
+                    <div id="options-setup" class="incorrect-options-grid"></div>
                 </div>
                 
                 <button id="btn-add-option" class="btn-ghost">＋ Añadir opción incorrecta</button>
+                
+                <div class="save-q-wrapper">
+                    <button id="btn-next-q" class="btn-secondary">💾 Guardar Pregunta</button>
+                </div>
             </div>
             
             <div class="editor-footer-actions">
-                <button id="btn-next-q" class="btn-secondary">💾 Guardar Pregunta</button>
                 <button id="btn-save-quiz" class="btn-main btn-green">🚀 Publicar Quiz</button>
             </div>
         </div>

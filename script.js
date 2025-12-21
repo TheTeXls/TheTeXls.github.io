@@ -27,9 +27,6 @@ function showScreen(id) {
     if (target) target.classList.remove('hidden');
 }
 
-/**
- * Actualiza la interfaz del creador (V1.4)
- */
 function updateEditorUI() {
     const countBadge = document.getElementById('questions-added-count');
     const qLabel = document.getElementById('q-number-display');
@@ -56,9 +53,6 @@ window.removeQuestion = (index) => {
     updateEditorUI();
 };
 
-/**
- * Resetea el constructor de preguntas con diseño V1.4
- */
 function resetEditorInputs() {
     const qText = document.getElementById('q-text');
     if (qText) qText.value = "";
@@ -84,12 +78,10 @@ function resetEditorInputs() {
 async function handleLogin() {
     const nameInput = document.getElementById('user-name-input');
     const passInput = document.getElementById('user-pass-input');
-    
     const rawName = nameInput.value.trim();
     const pass = passInput.value.trim();
 
     if (!rawName || !pass) return alert("Completa los datos");
-
     const lowerName = rawName.toLowerCase();
     
     if (lowerName === ADMIN_ID && pass === ADMIN_PASS) {
@@ -109,20 +101,18 @@ async function handleLogin() {
             currentUser = lowerName;
         } catch (e) { return alert("Error de base de datos."); }
     }
-
     localStorage.setItem('quizUser', currentUser);
     localStorage.setItem('quizDisplayName', displayName);
     window.showHome();
 }
 
 // ==========================================
-// 4. TIEMPO REAL Y BLINDAJE (V1.2)
+// 4. TIEMPO REAL Y BLINDAJE
 // ==========================================
 async function initRealtime() {
     if (isListening) return;
     isListening = true;
 
-    // Mapa de usuarios
     const uSnap = await getDocs(collection(window.db, "users"));
     uSnap.forEach(u => userMap[u.id] = u.data().originalName);
     userMap["admin"] = "Admin Maestro";
@@ -135,14 +125,11 @@ async function initRealtime() {
     const quizList = document.getElementById('quiz-list');
     const loadingStatus = document.getElementById('quiz-loading-status');
 
-    // Listener de Quizzes
     onSnapshot(collection(window.db, "quizzes"), async (snap) => {
         if (loadingStatus) loadingStatus.classList.add('hidden');
         if (!quizList) return;
-
         quizList.innerHTML = snap.empty ? "<p>No hay quizzes aún.</p>" : "";
 
-        // Parche no repetición
         let playedIds = [];
         const scoreSnap = await getDocs(query(collection(window.db, "scores"), where("user", "==", currentUser)));
         playedIds = scoreSnap.docs.map(doc => doc.data().quizId);
@@ -152,7 +139,6 @@ async function initRealtime() {
             const qId = d.id;
             const div = document.createElement('div');
             div.className = 'quiz-card';
-            
             const isAuthor = (q.author === displayName);
             const played = playedIds.includes(qId);
 
@@ -192,37 +178,29 @@ async function initRealtime() {
                 bS.onclick = (e) => { e.stopPropagation(); openSettings({id: qId, ...q}); };
                 div.appendChild(bS);
             }
-
             div.appendChild(btn);
             quizList.appendChild(div);
         });
     });
 
-    // Listener Ranking
     onSnapshot(collection(window.db, "scores"), (snap) => {
         const rList = document.getElementById('global-ranking-list');
         if (!rList) return;
         rList.innerHTML = snap.empty ? "<p>Nadie aún.</p>" : "";
-        
         let scores = {};
         snap.forEach(d => {
             const s = d.data();
             if (s.user) scores[s.user] = (scores[s.user] || 0) + s.points;
         });
-
         Object.entries(scores).sort((a,b) => b[1]-a[1]).forEach(([uid, pts], i) => {
             const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":"";
-            rList.innerHTML += `
-                <div class="ranking-item">
-                    <span>${medal} ${userMap[uid] || uid}</span>
-                    <b style="color:#6366f1">${pts} pts</b>
-                </div>`;
+            rList.innerHTML += `<div class="ranking-item"><span>${medal} ${userMap[uid] || uid}</span><b>${pts} pts</b></div>`;
         });
     });
 }
 
 // ==========================================
-// 5. JUEGO
+// 5. JUEGO (GAMEPLAY CON GRID)
 // ==========================================
 function startQuizSession(quiz) {
     activeQuiz = quiz; currentQIdx = 0; sessionScore = 0;
@@ -235,17 +213,18 @@ function renderQuestion() {
     const cont = document.getElementById('options-container');
     if (!cont) return;
 
-    cont.innerHTML = `
-        <div style="background:#f1f5f9; padding:30px; border-radius:20px; margin-bottom:25px;">
-            <p style="font-size:20px; font-weight:700; color:#1e293b;">${qData.text}</p>
-        </div>
-    `;
+    cont.innerHTML = ""; // Se limpia para el nuevo diseño de Grid
+    
+    // El enunciado arriba del Grid
+    const questionBox = document.createElement('div');
+    questionBox.style = "grid-column: span 2; background:#f1f5f9; padding:25px; border-radius:20px; margin-bottom:10px;";
+    questionBox.innerHTML = `<p style="font-size:18px; font-weight:700; color:#1e293b;">${qData.text}</p>`;
+    cont.appendChild(questionBox);
 
     const correct = qData.opts[0];
     [...qData.opts].sort(() => Math.random() - 0.5).forEach(opt => {
         const b = document.createElement('button');
-        b.className = "btn-main btn-purple";
-        b.style.marginBottom = "12px";
+        b.className = "btn-option-game"; // Nueva clase de grid
         b.innerText = opt;
         b.onclick = async () => {
             if (opt === correct) sessionScore++;
@@ -271,14 +250,12 @@ function renderQuestion() {
 function openSettings(quiz) {
     document.getElementById('settings-quiz-title').innerText = quiz.title;
     showScreen('settings-screen');
-    
     document.getElementById('btn-delete-quiz').onclick = async () => {
         if (confirm("¿Eliminar?")) {
             await deleteDoc(doc(window.db, "quizzes", quiz.id));
             window.showHome();
         }
     };
-
     document.getElementById('btn-view-responses').onclick = async () => {
         showScreen('responses-screen');
         const t = document.getElementById('responses-table');
@@ -305,22 +282,19 @@ window.showHome = () => {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login-action').onclick = handleLogin;
     document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
-    
     document.getElementById('btn-go-editor').onclick = () => {
         tempQuestions = [];
         document.getElementById('quiz-title-input').value = "";
         resetEditorInputs();
         showScreen('editor-screen');
     };
-
     document.getElementById('btn-add-option').onclick = () => {
         const setup = document.getElementById('options-setup');
-        if (setup.querySelectorAll('input').length >= 5) return alert("Máximo 6 opciones totales");
+        if (setup.querySelectorAll('input').length >= 9) return alert("Máximo 10 opciones totales");
         const i = document.createElement('input');
         i.className = "opt-input"; i.placeholder = "❌ Opción incorrecta";
         setup.appendChild(i);
     };
-
     document.getElementById('btn-next-q').onclick = () => {
         const t = document.getElementById('q-text').value.trim();
         const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
@@ -328,14 +302,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tempQuestions.push({ text: t, opts: opts });
         resetEditorInputs();
     };
-
     document.getElementById('btn-save-quiz').onclick = async () => {
         const title = document.getElementById('quiz-title-input').value.trim();
         if (!title || tempQuestions.length < 5) return alert("Falta título o preguntas (min 5)");
         await addDoc(collection(window.db, "quizzes"), { title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp() });
         window.showHome();
     };
-
     document.getElementById('btn-reset-ranking').onclick = async () => {
         if (confirm("¿RESETEAR TODO?")) {
             const batch = writeBatch(window.db);
@@ -344,10 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
             await batch.commit();
         }
     };
-
     document.getElementById('btn-back-home').onclick = () => window.showHome();
     document.getElementById('btn-settings-back').onclick = () => window.showHome();
     document.getElementById('btn-responses-back').onclick = () => showScreen('settings-screen');
-
     window.showHome();
 });
