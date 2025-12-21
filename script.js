@@ -43,7 +43,7 @@ function updateEditorUI() {
                 <span><b>${i+1}.</b> ${q.text}</span>
                 <button onclick="window.removeQuestion(${i})" style="color:#ef4444; border:none; background:none; cursor:pointer; font-weight:bold;">✖</button>
             </div>`).join('');
-    } else { previewCont.classList.add('hidden'); }
+    } else { if (previewCont) previewCont.classList.add('hidden'); }
 }
 
 window.removeQuestion = (index) => {
@@ -67,16 +67,17 @@ function resetEditorInputs() {
 async function handleLogin() {
     const nameInput = document.getElementById('user-name-input');
     const passInput = document.getElementById('user-pass-input');
-    const rawName = nameInput.value.trim();
-    const pass = passInput.value.trim();
+    const rawName = nameInput.value?.trim();
+    const pass = passInput.value?.trim();
+    
     if (!rawName || !pass) return alert("Completa los datos");
     const lowerName = rawName.toLowerCase();
     
-    if (lowerName === ADMIN_ID && pass === ADMIN_PASS) {
-        currentUser = ADMIN_ID; displayName = "Admin Maestro";
-    } else {
-        const userRef = doc(window.db, "users", lowerName);
-        try {
+    try {
+        if (lowerName === ADMIN_ID && pass === ADMIN_PASS) {
+            currentUser = ADMIN_ID; displayName = "Admin Maestro";
+        } else {
+            const userRef = doc(window.db, "users", lowerName);
             const snap = await getDoc(userRef);
             if (snap.exists()) {
                 if (snap.data().pass !== pass) return alert("Contraseña incorrecta");
@@ -86,11 +87,11 @@ async function handleLogin() {
                 displayName = rawName;
             }
             currentUser = lowerName;
-        } catch (e) { return alert("Error de base de datos."); }
-    }
-    localStorage.setItem('quizUser', currentUser);
-    localStorage.setItem('quizDisplayName', displayName);
-    window.showHome();
+        }
+        localStorage.setItem('quizUser', currentUser);
+        localStorage.setItem('quizDisplayName', displayName);
+        window.showHome();
+    } catch (e) { console.error("Login Error:", e); }
 }
 
 // ==========================================
@@ -99,63 +100,74 @@ async function handleLogin() {
 async function initRealtime() {
     if (isListening) return;
     isListening = true;
-    const uSnap = await getDocs(collection(window.db, "users"));
-    uSnap.forEach(u => userMap[u.id] = u.data().originalName);
-    userMap["admin"] = "Admin Maestro";
+    
+    try {
+        const uSnap = await getDocs(collection(window.db, "users"));
+        uSnap.forEach(u => userMap[u.id] = u.data().originalName);
+        userMap["admin"] = "Admin Maestro";
 
-    if (currentUser === ADMIN_ID) {
-        const panel = document.getElementById('admin-controls');
-        if (panel) panel.classList.remove('hidden');
-    }
+        if (currentUser === ADMIN_ID) {
+            const panel = document.getElementById('admin-controls');
+            if (panel) panel.classList.remove('hidden');
+        }
 
-    const quizList = document.getElementById('quiz-list');
-    onSnapshot(collection(window.db, "quizzes"), async (snap) => {
-        const loading = document.getElementById('quiz-loading-status');
-        if (loading) loading.classList.add('hidden');
-        quizList.innerHTML = snap.empty ? "<p>No hay quizzes aún.</p>" : "";
-        
-        let playedIds = [];
-        const scoreSnap = await getDocs(query(collection(window.db, "scores"), where("user", "==", currentUser)));
-        playedIds = scoreSnap.docs.map(doc => doc.data().quizId);
+        const quizList = document.getElementById('quiz-list');
+        onSnapshot(collection(window.db, "quizzes"), async (snap) => {
+            const loading = document.getElementById('quiz-loading-status');
+            if (loading) loading.classList.add('hidden');
+            quizList.innerHTML = snap.empty ? "<p>No hay quizzes aún.</p>" : "";
+            
+            let playedIds = [];
+            const scoreSnap = await getDocs(query(collection(window.db, "scores"), where("user", "==", currentUser)));
+            playedIds = scoreSnap.docs.map(doc => doc.data().quizId);
 
-        snap.forEach(d => {
-            const q = d.data(); const qId = d.id;
-            const div = document.createElement('div');
-            div.className = 'quiz-card';
-            const isAuthor = (q.author === displayName);
-            const played = playedIds.includes(qId);
-            div.innerHTML = `<div style="margin-bottom:15px"><h4 style="font-size:18px; margin-bottom:5px">${q.title}</h4><span class="badge">${q.questions.length} preg.</span><small style="margin-left:10px; color:#64748b">por ${q.author}</small></div>`;
-            const btn = document.createElement('button');
-            btn.className = "btn-main btn-purple";
-            if (currentUser === ADMIN_ID) { btn.innerText = "Probar Quiz (Admin)"; btn.onclick = () => startQuizSession({id: qId, ...q}); }
-            else if (isAuthor) { btn.innerText = "Tu creación"; btn.disabled = true; btn.style.opacity = "0.5"; }
-            else if (played) { btn.innerText = "Completado ✅"; btn.disabled = true; btn.style.background = "#f1f5f9"; btn.style.color = "#94a3b8"; }
-            else { btn.innerText = "Jugar ahora"; btn.onclick = () => startQuizSession({id: qId, ...q}); }
-            if (currentUser === ADMIN_ID || isAuthor) {
-                const bS = document.createElement('button'); bS.className = "btn-small"; bS.style.position = "absolute"; bS.style.top = "20px"; bS.style.right = "20px"; bS.innerHTML = "⚙️";
-                bS.onclick = (e) => { e.stopPropagation(); openSettings({id: qId, ...q}); }; div.appendChild(bS);
-            }
-            div.appendChild(btn); quizList.appendChild(div);
+            snap.forEach(d => {
+                const q = d.data(); const qId = d.id;
+                const div = document.createElement('div');
+                div.className = 'quiz-card';
+                const isAuthor = (q.author === displayName);
+                const played = playedIds.includes(qId);
+                
+                div.innerHTML = `<div style="margin-bottom:15px"><h4 style="font-size:18px; margin-bottom:5px">${q.title}</h4><span class="badge">${q.questions.length} preg.</span></div>`;
+                
+                const btn = document.createElement('button');
+                btn.className = "btn-main btn-purple";
+                
+                if (currentUser === ADMIN_ID) { 
+                    btn.innerText = "Probar Quiz (Admin)"; 
+                    btn.onclick = () => startQuizSession({id: qId, ...q}); 
+                } else if (isAuthor) { 
+                    btn.innerText = "Tu creación"; btn.disabled = true; btn.style.opacity = "0.5"; 
+                } else if (played) { 
+                    btn.innerText = "Completado ✅"; btn.disabled = true; btn.style.background = "#f1f5f9"; 
+                } else { 
+                    btn.innerText = "Jugar ahora"; 
+                    btn.onclick = () => startQuizSession({id: qId, ...q}); 
+                }
+                
+                div.appendChild(btn); 
+                quizList.appendChild(div);
+            });
         });
-    });
 
-    onSnapshot(collection(window.db, "scores"), (snap) => {
-        const rList = document.getElementById('global-ranking-list');
-        rList.innerHTML = snap.empty ? "<p>Nadie aún.</p>" : "";
-        let scores = {};
-        snap.forEach(d => { const s = d.data(); if (s.user) scores[s.user] = (scores[s.user] || 0) + s.points; });
-        Object.entries(scores).sort((a,b) => b[1]-a[1]).forEach(([uid, pts], i) => {
-            const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":"";
-            rList.innerHTML += `<div class="ranking-item"><span>${medal} ${userMap[uid] || uid}</span><b>${pts} pts</b></div>`;
+        onSnapshot(collection(window.db, "scores"), (snap) => {
+            const rList = document.getElementById('global-ranking-list');
+            if (!rList) return;
+            rList.innerHTML = snap.empty ? "<p>Nadie aún.</p>" : "";
+            let scores = {};
+            snap.forEach(d => { const s = d.data(); if (s.user) scores[s.user] = (scores[s.user] || 0) + s.points; });
+            Object.entries(scores).sort((a,b) => b[1]-a[1]).forEach(([uid, pts], i) => {
+                const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":"";
+                rList.innerHTML += `<div class="ranking-item"><span>${medal} ${userMap[uid] || uid}</span><b>${pts} pts</b></div>`;
+            });
         });
-    });
+    } catch (e) { console.error("Realtime Init Error:", e); }
 }
 
 // ==========================================
-// 5. JUEGO V1.7 (BLINDAJE Y LÓGICA DE SALIDA)
+// 5. JUEGO V1.7 (BLINDAJE Y GRID DINÁMICO)
 // ==========================================
 async function startQuizSession(quiz) {
-    // BLINDAJE: Verificar si el usuario ya tiene puntos en este quiz antes de dejarlo entrar
     if (currentUser !== ADMIN_ID) {
         const checkScore = await getDocs(query(
             collection(window.db, "scores"), 
@@ -164,12 +176,10 @@ async function startQuizSession(quiz) {
         ));
 
         let hasPoints = false;
-        checkScore.forEach(d => {
-            if (d.data().points > 0) hasPoints = true;
-        });
+        checkScore.forEach(d => { if (d.data().points > 0) hasPoints = true; });
 
         if (hasPoints) {
-            alert("No puedes volver a jugar un quiz donde ya tienes aciertos registrados.");
+            alert("Ya tienes aciertos registrados. No puedes repetir este quiz.");
             return window.showHome();
         }
     }
@@ -182,20 +192,14 @@ async function startQuizSession(quiz) {
 }
 
 async function exitQuizSession() {
-    if (confirm("¿Estás seguro de que quieres abandonar? Si ya tienes aciertos, se guardarán y no podrás repetir el quiz.")) {
-        // LÓGICA DE CONDICIÓN:
+    if (confirm("¿Abandonar? Si tienes aciertos, se guardarán y no podrás volver a jugar.")) {
         if (sessionScore > 0 && currentUser !== ADMIN_ID) {
-            // Guardamos los puntos actuales para bloquear re-intentos
-            await addDoc(collection(window.db, "scores"), { 
-                user: currentUser, 
-                points: sessionScore, 
-                quizId: activeQuiz.id, 
-                date: serverTimestamp(),
-                status: "abandoned"
-            });
-            alert(`Saliste con ${sessionScore} aciertos. Se ha registrado tu puntuación.`);
-        } else if (sessionScore === 0) {
-            alert("Saliste con 0 aciertos. Podrás intentarlo de nuevo más tarde.");
+            try {
+                await addDoc(collection(window.db, "scores"), { 
+                    user: currentUser, points: sessionScore, quizId: activeQuiz.id, date: serverTimestamp() 
+                });
+                alert(`Puntuación de ${sessionScore} registrada.`);
+            } catch (e) { console.error("Exit Save Error:", e); }
         }
         window.showHome();
     }
@@ -203,19 +207,28 @@ async function exitQuizSession() {
 
 function renderQuestion() {
     const qData = activeQuiz.questions[currentQIdx];
-    document.getElementById('current-quiz-title').innerText = activeQuiz.title;
+    const titleElem = document.getElementById('current-quiz-title');
+    if (titleElem) titleElem.innerText = activeQuiz.title;
+    
     const cont = document.getElementById('options-container');
     cont.innerHTML = ""; 
     
+    // Ajustar columnas según número de opciones (máximo 3 columnas para 6+ opciones)
+    const numOpts = qData.opts.length;
+    const gridCols = numOpts >= 6 ? "repeat(3, 1fr)" : "repeat(2, 1fr)";
+    cont.style.display = "grid";
+    cont.style.gridTemplateColumns = gridCols;
+    cont.style.gap = "15px";
+
     const questionBox = document.createElement('div');
-    questionBox.style = "grid-column: 1 / -1; background:#f1f5f9; padding:25px; border-radius:20px; margin-bottom:10px;";
-    questionBox.innerHTML = `<p style="font-size:18px; font-weight:700; color:#1e293b;">${qData.text}</p>`;
+    questionBox.style = "grid-column: 1 / -1; background:#f8fafc; padding:20px; border-radius:15px; margin-bottom:10px; text-align:center; border: 1px solid #e2e8f0;";
+    questionBox.innerHTML = `<p style="font-size:18px; font-weight:700;">${qData.text}</p>`;
     cont.appendChild(questionBox);
 
     const correct = qData.opts[0];
     [...qData.opts].sort(() => Math.random() - 0.5).forEach(opt => {
         const b = document.createElement('button');
-        b.className = "btn-option-game";
+        b.className = "btn-option-game"; // Asegúrate que tu CSS tenga este estilo
         b.innerText = opt;
         b.onclick = async () => {
             if (opt === correct) sessionScore++;
@@ -228,7 +241,7 @@ function renderQuestion() {
                         user: currentUser, points: sessionScore, quizId: activeQuiz.id, date: serverTimestamp() 
                     });
                 }
-                alert("Finalizado. Puntos: " + sessionScore);
+                alert("Quiz terminado. Aciertos: " + sessionScore);
                 window.showHome();
             }
         };
@@ -237,8 +250,8 @@ function renderQuestion() {
 
     const exitBtn = document.createElement('button');
     exitBtn.className = "btn-exit-quiz";
-    exitBtn.style = "grid-column: 1 / -1; margin-top:20px;";
-    exitBtn.innerText = "Abandonar Quiz 🚪";
+    exitBtn.style = "grid-column: 1 / -1; margin-top:20px; padding: 12px; border-radius: 10px; cursor: pointer;";
+    exitBtn.innerText = "Sair del Quiz 🚪";
     exitBtn.onclick = exitQuizSession;
     cont.appendChild(exitBtn);
 }
@@ -246,30 +259,65 @@ function renderQuestion() {
 // ==========================================
 // 6. GESTIÓN E INICIO
 // ==========================================
-function openSettings(quiz) {
-    document.getElementById('settings-quiz-title').innerText = quiz.title;
-    showScreen('settings-screen');
-    document.getElementById('btn-delete-quiz').onclick = async () => { if (confirm("¿Eliminar?")) { await deleteDoc(doc(window.db, "quizzes", quiz.id)); window.showHome(); } };
-    document.getElementById('btn-view-responses').onclick = async () => {
-        showScreen('responses-screen'); const t = document.getElementById('responses-table'); t.innerHTML = "Cargando...";
-        const sn = await getDocs(query(collection(window.db, "scores"), where("quizId", "==", quiz.id)));
-        t.innerHTML = sn.empty ? "Sin respuestas" : "";
-        sn.forEach(d => { const r = d.data(); t.innerHTML += `<div class="ranking-item"><span>${userMap[r.user] || r.user}</span><b>${r.points} pts</b></div>`; });
-    };
-}
-
-window.showHome = () => { if (!currentUser) return showScreen('login-screen'); showScreen('home-screen'); document.getElementById('user-display').innerText = "👤 " + displayName; initRealtime(); };
+window.showHome = () => { 
+    if (!currentUser) return showScreen('login-screen'); 
+    showScreen('home-screen'); 
+    const uDisp = document.getElementById('user-display');
+    if (uDisp) uDisp.innerText = "👤 " + displayName; 
+    initRealtime(); 
+};
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('btn-login-action').onclick = handleLogin;
-    document.getElementById('btn-logout').onclick = () => { localStorage.clear(); location.reload(); };
-    document.getElementById('btn-go-editor').onclick = () => { tempQuestions = []; document.getElementById('quiz-title-input').value = ""; resetEditorInputs(); showScreen('editor-screen'); };
-    document.getElementById('btn-add-option').onclick = () => { const setup = document.getElementById('options-setup'); if (setup.querySelectorAll('input').length >= 9) return alert("Máximo 10"); const i = document.createElement('input'); i.className = "opt-input"; i.placeholder = "❌ Opción incorrecta"; setup.appendChild(i); };
-    document.getElementById('btn-next-q').onclick = () => { const t = document.getElementById('q-text').value.trim(); const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim()); if (!t || opts.some(o => !o)) return alert("Faltan datos"); tempQuestions.push({ text: t, opts: opts }); resetEditorInputs(); };
-    document.getElementById('btn-save-quiz').onclick = async () => { const title = document.getElementById('quiz-title-input').value.trim(); if (!title || tempQuestions.length < 5) return alert("Min 5 preguntas"); await addDoc(collection(window.db, "quizzes"), { title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp() }); window.showHome(); };
-    document.getElementById('btn-reset-ranking').onclick = async () => { if (confirm("¿Resetear?")) { const batch = writeBatch(window.db); const sn = await getDocs(collection(window.db, "scores")); sn.forEach(d => batch.delete(d.ref)); await batch.commit(); } };
-    document.getElementById('btn-back-home').onclick = () => window.showHome();
-    document.getElementById('btn-settings-back').onclick = () => window.showHome();
-    document.getElementById('btn-responses-back').onclick = () => showScreen('settings-screen');
+    // Configuración de botones con verificaciones de existencia para evitar errores de consola
+    const btnLogin = document.getElementById('btn-login-action');
+    if (btnLogin) btnLogin.onclick = handleLogin;
+
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) btnLogout.onclick = () => { localStorage.clear(); location.reload(); };
+
+    const btnGoEditor = document.getElementById('btn-go-editor');
+    if (btnGoEditor) btnGoEditor.onclick = () => { tempQuestions = []; resetEditorInputs(); showScreen('editor-screen'); };
+
+    const btnAddOpt = document.getElementById('btn-add-option');
+    if (btnAddOpt) btnAddOpt.onclick = () => {
+        const setup = document.getElementById('options-setup');
+        if (setup && setup.querySelectorAll('input').length < 10) {
+            const i = document.createElement('input'); i.className = "opt-input"; i.placeholder = "❌ Opción incorrecta";
+            setup.appendChild(i);
+        }
+    };
+
+    const btnNextQ = document.getElementById('btn-next-q');
+    if (btnNextQ) btnNextQ.onclick = () => {
+        const t = document.getElementById('q-text')?.value.trim();
+        const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value.trim());
+        if (!t || opts.some(o => !o)) return alert("Faltan datos");
+        tempQuestions.push({ text: t, opts: opts });
+        resetEditorInputs();
+    };
+
+    const btnSaveQuiz = document.getElementById('btn-save-quiz');
+    if (btnSaveQuiz) btnSaveQuiz.onclick = async () => {
+        const title = document.getElementById('quiz-title-input')?.value.trim();
+        if (!title || tempQuestions.length < 5) return alert("Min 5 preguntas");
+        await addDoc(collection(window.db, "quizzes"), { title, questions: tempQuestions, author: displayName, createdAt: serverTimestamp() });
+        window.showHome();
+    };
+
+    const btnResetRank = document.getElementById('btn-reset-ranking');
+    if (btnResetRank) btnResetRank.onclick = async () => {
+        if (confirm("¿Resetear ranking?")) {
+            const batch = writeBatch(window.db);
+            const sn = await getDocs(collection(window.db, "scores"));
+            sn.forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+    };
+
+    // Botones de retroceso
+    document.querySelectorAll('[id$="-back"], #btn-back-home').forEach(btn => {
+        btn.onclick = () => window.showHome();
+    });
+
     window.showHome();
 });
